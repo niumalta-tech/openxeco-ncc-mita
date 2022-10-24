@@ -7,7 +7,7 @@ import { validatePassword, validateEmail } from "../utils/re.jsx";
 import Info from "./box/Info.jsx";
 import { getUrlParameter } from "../utils/url.jsx";
 import { getCookieOptions, getGlobalAppURL, getApiURL } from "../utils/env.jsx";
-import DialogHint from "./dialog/DialogHint.jsx";
+// import DialogHint from "./dialog/DialogHint.jsx";
 import Version from "./box/Version.jsx";
 
 export default class Login extends React.Component {
@@ -29,19 +29,24 @@ export default class Login extends React.Component {
 		case "create_account":
 			view = "create";
 			break;
+		case "verify_account":
+			view = "verify";
+			break;
 		default:
 			view = "login";
 		}
 
 		this.state = {
-			email: null,
-			createAccountEmail: null,
-			password: null,
-			passwordConfirmation: null,
+			email: "",
+			createAccountEmail: "",
+			password: "",
+			passwordConfirmation: "",
 			view,
 			partOfEntity: false,
 			entity: "",
-			entityDepartment: null,
+			entityDepartment: "",
+			checkedVerified: false,
+			verified: false,
 		};
 	}
 
@@ -54,21 +59,43 @@ export default class Login extends React.Component {
 			this.props.cookies.set("access_token_cookie", getUrlParameter("token"), getCookieOptions());
 		}
 
-		// Log in the user if there is an existing cookie
+		// Get the token if the user reaches the app though acount verification URL
 
-		if (this.props.cookies.get("access_token_cookie")) {
-			getRequest.call(this, "private/get_my_user", (data) => {
-				this.props.connect(data.email);
+		if (getUrlParameter("action") === "verify_account") {
+			getRequest.call(this, "account/verify_account/" + getUrlParameter("token"), () => {
+				this.setState({
+					checkedVerified: true,
+					verified: true,
+				});
 			}, (response2) => {
 				nm.warning(response2.statusText);
+				this.changeState("view", "login");
 			}, (error) => {
 				nm.error(error.message);
+				this.changeState("view", "login");
 			});
 		}
 
-		// This function to notify if the password has been reset correctly
+		// Log in the user if there is an existing cookie
+		if (getUrlParameter("action") !== "reset_password" && getUrlParameter("action") !== "verify_account") {
+			if (this.props.cookies.get("access_token_cookie")) {
+				this.fetchUser();
+			}
+		}
 
+		// This function to notify if the password has been reset correctly
 		Login.notifyForPasswordReset();
+	}
+
+	fetchUser() {
+		getRequest.call(this, "private/get_my_user", (data) => {
+			this.props.connect(data.email);
+			this.props.setUserStatus(data.status);
+		}, (response2) => {
+			nm.warning(response2.statusText);
+		}, (error) => {
+			nm.error(error.message);
+		});
 	}
 
 	componentDidUpdate(_, prevState) {
@@ -98,6 +125,7 @@ export default class Login extends React.Component {
 		postRequest.call(this, "account/login", params, (response) => {
 			this.props.cookies.set("access_token_cookie", response.access_token, getCookieOptions());
 			this.props.connect(this.state.email);
+			this.fetchUser();
 		}, (response) => {
 			nm.warning(response.statusText);
 		}, (error) => {
@@ -106,14 +134,23 @@ export default class Login extends React.Component {
 	}
 
 	createAccount() {
+		if (
+			!validateEmail(this.state.createAccountEmail)
+			|| !validatePassword(this.state.password)
+		) {
+			nm.warning("Email address or password is invalid");
+			return;
+		}
+
 		const params = {
 			email: this.state.createAccountEmail,
+			password: this.state.password,
 			entity: this.state.entity && this.state.entity.length > 0 ? this.state.entity : null,
 			department: this.state.entityDepartment ? this.state.entityDepartment : null,
 		};
 
 		postRequest.call(this, "account/create_account", params, () => {
-			nm.info("An email has been sent to your mailbox with a generated password");
+			nm.info("An email has been sent to your mailbox with a verification link");
 		}, (response) => {
 			nm.warning(response.statusText);
 		}, (error) => {
@@ -194,7 +231,7 @@ export default class Login extends React.Component {
 					}
 				</div>
 
-				<div className="top-left-buttons">
+				{/* <div className="top-left-buttons">
 					<DialogHint
 						content={
 							<div className="row">
@@ -341,7 +378,7 @@ export default class Login extends React.Component {
 						}
 						validateSelection={(value) => this.onChange(value)}
 					/>
-				</div>
+				</div> */}
 
 				<div id="Login-area">
 					<ul className="Login-circles">
@@ -452,51 +489,39 @@ export default class Login extends React.Component {
 										onChange={(v) => this.changeState("createAccountEmail", v)}
 										autofocus={true}
 										onKeyDown={this.onKeyDown}
+										format={validateEmail}
 									/>
-									<br/>
-									{this.props.settings
-										&& this.props.settings.ALLOW_ENTITY_REQUEST_ON_SUBSCRIPTION === "TRUE"
-										&& <div>
-											<FormLine
-												labelWidth={8}
-												label="I am part of a entity"
-												type={"checkbox"}
-												value={this.state.partOfEntity}
-												onChange={(v) => this.changeState("partOfEntity", v)}
-												onKeyDown={this.onKeyDown}
-											/>
-											<FormLine
-												labelWidth={4}
-												label="Entity"
-												value={this.state.entity}
-												onChange={(v) => this.changeState("entity", v)}
-												onKeyDown={this.onKeyDown}
-												disabled={!this.state.partOfEntity}
-											/>
-											<FormLine
-												labelWidth={4}
-												label={"Department"}
-												type={"select"}
-												options={[
-													{ label: "TOP MANAGEMENT", value: "TOP MANAGEMENT" },
-													{ label: "HUMAN RESOURCE", value: "HUMAN RESOURCE" },
-													{ label: "MARKETING", value: "MARKETING" },
-													{ label: "FINANCE", value: "FINANCE" },
-													{ label: "OPERATION/PRODUCTION", value: "OPERATION/PRODUCTION" },
-													{ label: "INFORMATION TECHNOLOGY", value: "INFORMATION TECHNOLOGY" },
-													{ label: "OTHER", value: "OTHER" },
-												]}
-												value={this.state.entityDepartment}
-												onChange={(v) => this.changeState("entityDepartment", v)}
-												disabled={!this.state.partOfEntity}
-											/>
-										</div>
+									<FormLine
+										label="Password"
+										fullWidth={true}
+										type={"password"}
+										value={this.state.password}
+										onChange={(v) => this.changeState("password", v)}
+										autofocus={true}
+										onKeyDown={this.onKeyDown}
+										format={validatePassword}
+									/>
+									<br />
+									{!validatePassword(this.state.password)
+										&& <>
+											<div className="Password-prompt">
+												The password must:<br />
+												<li>contain at least 1 lowercase alphabetical character</li>
+												<li>contain at least 1 uppercase alphabetical character</li>
+												<li>contain at least 1 numeric character</li>
+												<li>contain at least 1 special character such as !@#$%^&*</li>
+												<li>be between 8 and 30 characters long</li>
+											</div>
+											<br />
+										</>
 									}
 									<div className="right-buttons">
 										<button
 											className="blue-button"
 											onClick={this.createAccount}
-											disabled={!validateEmail(this.state.createAccountEmail)
+											disabled={
+												!validateEmail(this.state.createAccountEmail)
+												|| !validatePassword(this.state.password)
 												|| (this.state.partOfEntity
 													&& (
 														!this.state.entity
@@ -612,6 +637,71 @@ export default class Login extends React.Component {
 										Back to login
 									</button>
 								</div>
+							</div>
+						}
+
+						{this.state.view === "verify"
+							&& <div className="row">
+
+								<div className="col-md-12">
+									<div className="Login-title">
+										{this.props.settings !== null
+											&& this.props.settings.PRIVATE_SPACE_PLATFORM_NAME !== undefined
+											? this.props.settings.PRIVATE_SPACE_PLATFORM_NAME
+											: "PRIVATE SPACE"
+										}
+
+										{this.props.settings !== null
+											&& this.props.settings.PROJECT_NAME !== undefined
+											&& <div className={"Login-title-small"}>
+												{this.props.settings.PROJECT_NAME} private space
+											</div>
+										}
+									</div>
+								</div>
+
+								{this.state.checkedVerified === false
+									&& <div className="col-md-12">
+										<div className="left-buttons pl-2">
+											Verifying Account...
+										</div>
+									</div>
+								}
+
+								{this.state.verified === true
+									&& <div className="col-md-12">
+										<div className="left-buttons pl-2">
+											Account Verified Successfully!
+											<br />
+											<button
+												className="link-button"
+												onClick={() => window.location.replace("/")}
+											>
+												Back to login
+											</button>
+										</div>
+									</div>
+								}
+
+								{this.state.checkedVerified === true && this.state.verified === false
+									&& <div className="col-md-12">
+										<div className="left-buttons pl-2">
+											Account Verification Failed!
+											<button
+												className="link-button"
+												onClick={() => window.location.replace("/")}
+											>
+												Back to login
+											</button>
+										</div>
+									</div>
+								}
+							</div>
+						}
+
+						{this.state.view === "add_profile"
+							&& <div className="row">
+								Add Profile
 							</div>
 						}
 					</div>

@@ -1,3 +1,4 @@
+import json
 from flask import request, render_template
 from flask_apispec import MethodResource
 from flask_apispec import use_kwargs, doc
@@ -10,9 +11,8 @@ from decorator.catch_exception import catch_exception
 from decorator.log_request import log_request
 from exception.object_already_existing import ObjectAlreadyExisting
 from utils.mail import send_email
-from utils.password import generate_password
 from utils.re import has_mail_format
-
+from utils.token import generate_confirmation_token
 
 class CreateAccount(MethodResource, Resource):
 
@@ -35,6 +35,7 @@ class CreateAccount(MethodResource, Resource):
          })
     @use_kwargs({
         'email': fields.Str(),
+        'password': fields.Str(),
         'entity': fields.Str(required=False, allow_none=True),
         'department': fields.Str(required=False, allow_none=True),
     })
@@ -58,12 +59,12 @@ class CreateAccount(MethodResource, Resource):
 
         # Create user
 
-        generated_password = generate_password()
+        password = kwargs["password"]
 
         try:
             user = self.db.insert({
                 "email": email,
-                "password": generate_password_hash(generated_password),
+                "password": generate_password_hash(password),
                 "is_active": 1,
             }, self.db.tables["User"])
         except IntegrityError as e:
@@ -71,43 +72,37 @@ class CreateAccount(MethodResource, Resource):
                 raise ObjectAlreadyExisting
             raise e
 
-        # Create the entity request if filled
-
-        if "entity" in kwargs and kwargs["entity"] is not None \
-           and "department" in kwargs and kwargs["department"] is not None:
-            try:
-                self.db.insert({
-                    "user_id": user.id,
-                    "request": "The user requests the access to the entity '"
-                               + kwargs["entity"]
-                               + "' with the following department: '"
-                               + kwargs["department"]
-                               + "'",
-                    "type": "ENTITY ACCESS CLAIM",
-                }, self.db.tables["UserRequest"])
-            except IntegrityError as e:
-                self.db.session.rollback()
-                self.db.delete(self.db.tables["User"], {"id": user.id})
-                raise e
-
-        # Send email
-
         try:
-            pj_settings = self.db.get(self.db.tables["Setting"], {"property": "PROJECT_NAME"})
-            project_name = pj_settings[0].value if len(pj_settings) > 0 else ""
-
+            self.db.insert({
+                "entity_type": "User",
+                "entity_id": user.id,
+                "action": "Create User Account",
+                "values_before": "{}",
+                "values_after": json.dumps({
+                    "id": user.id,
+                    "email": user.email,
+                }),
+                "user_id": user.id,
+            }, self.db.tables["AuditRecord"])
+        except Exception as err:
+            # We don't want the app to error if we can't log the action
+            print(err)
+        # Send email
+        token = generate_confirmation_token(user.email)
+        try:
+            url = f"{origin}/login?action=verify_account&token={token}"
             send_email(self.mail,
-                       subject=f"[{project_name}] New account",
-                       recipients=[email],
-                       html_body=render_template(
-                           'new_account.html',
-                           url=origin + "/login",
-                           password=generated_password,
-                           project_name=project_name)
-                       )
+                subject=f"New account",
+                recipients=[email],
+                html_body=render_template(
+                    'new_account.html',
+                    email=user.email,
+                    url=url,
+                )
+            )
         except Exception as e:
             self.db.session.rollback()
             self.db.delete(self.db.tables["User"], {"id": user.id})
             raise e
 
-        return "", "200 "
+        return "", "200"

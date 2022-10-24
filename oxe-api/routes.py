@@ -6,6 +6,9 @@ from resource.account.forgot_password import ForgotPassword
 from resource.account.login import Login
 from resource.account.refresh import Refresh
 from resource.account.reset_password import ResetPassword
+from resource.account.verify_account import VerifyAccount
+from resource.account.update_status import UpdateStatus
+from resource.account.add_profile import AddProfile
 from resource.analytics.get_ecosystem_activity import GetEcosystemActivity
 from resource.article.copy_article_version import CopyArticleVersion
 from resource.article.get_articles import GetArticles
@@ -30,6 +33,7 @@ from resource.address.get_all_addresses import GetAllAddresses
 from resource.address.add_address import AddAddress
 from resource.address.delete_address import DeleteAddress
 from resource.address.update_address import UpdateAddress
+from resource.audit.get_audit_logs import GetAuditLogs
 from resource.notification.get_notifications import GetNotifications
 from resource.communication.get_communications import GetCommunications
 from resource.communication.send_communication import SendCommunication
@@ -44,6 +48,8 @@ from resource.entity.get_entity_workforces import GetEntityWorkforces
 from resource.entity.update_entity import UpdateEntity
 from resource.entity.add_entity import AddEntity
 from resource.entity.delete_entity import DeleteEntity
+from resource.entity.request_entity_form import RequestEntityForm
+from resource.entity.verify_work_email import VerifyWorkEmail
 from resource.contact.add_contact import AddContact
 from resource.contact.delete_contact import DeleteContact
 from resource.contact.get_contact_enums import GetContactEnums
@@ -56,6 +62,7 @@ from resource.form.add_form import AddForm
 from resource.form.add_form_question import AddFormQuestion
 from resource.form.delete_form import DeleteForm
 from resource.form.delete_form_question import DeleteFormQuestion
+from resource.form.extract_form import ExtractForm
 from resource.form.get_form_enums import GetFormEnums
 from resource.form.get_form_answers import GetFormAnswers
 from resource.form.get_form_question_enums import GetFormQuestionEnums
@@ -105,6 +112,7 @@ from resource.private.get_my_article_content import GetMyArticleContent
 from resource.private.get_my_articles import GetMyArticles
 from resource.private.get_my_entities import GetMyEntities
 from resource.private.get_my_entity_addresses import GetMyEntityAddresses
+from resource.private.get_my_entity_contacts import GetMyEntityContacts
 from resource.private.get_my_entity_collaborators import GetMyEntityCollaborators
 from resource.private.get_my_entity_requests import GetMyEntityRequests
 from resource.private.get_my_entity_taxonomy import GetMyEntityTaxonomy
@@ -117,6 +125,7 @@ from resource.private.update_my_article import UpdateMyArticle
 from resource.private.update_my_article_content import UpdateMyArticleContent
 from resource.private.update_my_form_answer import UpdateFormAnswer
 from resource.private.update_my_user import UpdateMyUser
+from resource.private.get_my_profile import GetMyProfile
 from resource.public.get_public_article_content import GetPublicArticleContent
 from resource.public.get_public_article_enums import GetArticleEnums
 from resource.public.get_public_article import GetPublicArticle
@@ -138,6 +147,15 @@ from resource.public.get_public_settings import GetPublicSettings
 from resource.public.get_public_taxonomy_values import GetPublicTaxonomyValues
 from resource.public.get_public_taxonomy import GetPublicTaxonomy
 from resource.public.get_public_vcard import GetPublicVcard
+from resource.public.get_public_countries import GetPublicCountries
+from resource.public.get_public_domains import GetPublicDomains
+from resource.public.get_public_expertise import GetPublicExpertise
+from resource.public.get_public_industries import GetPublicIndustries
+from resource.public.get_public_professions import GetPublicProfessions
+from resource.public.get_public_departments import GetPublicDepartments
+from resource.public.get_public_locations import GetPublicLocations
+from resource.public.get_public_involvement import GetPublicInvolvement
+from resource.public.get_public_sectors import GetPublicSectors
 from resource.relationship.add_relationship import AddRelationship
 from resource.relationship.add_relationship_type import AddRelationshipType
 from resource.relationship.delete_relationship import DeleteRelationship
@@ -176,6 +194,7 @@ from resource.user.get_user_group_assignments import GetUserGroupAssignments
 from resource.user.update_user import UpdateUser
 from resource.user.update_user_entity import UpdateUserEntity
 from resource.user.update_user_group_assignment import UpdateUserGroupAssignment
+from resource.user.get_user_profile import GetUserProfile
 from resource.taxonomy.add_taxonomy_assignment import AddTaxonomyAssignment
 from resource.taxonomy.add_taxonomy_category import AddTaxonomyCategory
 from resource.taxonomy.add_taxonomy_category_hierarchy import AddTaxonomyCategoryHierarchy

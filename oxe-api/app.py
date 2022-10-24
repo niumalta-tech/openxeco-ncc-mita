@@ -9,6 +9,7 @@ from apispec import APISpec
 from apispec.ext.marshmallow import MarshmallowPlugin
 from flask_apispec.extension import FlaskApiSpec
 
+from seeder.seeder import DatabaseSeeder
 from utils.re import has_mail_format
 from utils.resource import get_admin_post_resources
 
@@ -24,7 +25,6 @@ db_uri = URL(**config.DB_CONFIG)
 
 # Init Flask and set config
 app = Flask(__name__, template_folder="template")
-
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["ERROR_404_HELP"] = False
@@ -97,7 +97,8 @@ def create_initial_admin(email, password):
             "email": email,
             "password": bcrypt.generate_password_hash(password),
             "is_active": 1,
-            "is_admin": 1
+            "is_admin": 1,
+            "status": "ACCEPTED",
         },
         f"Initial user {email}"
     )
@@ -152,6 +153,25 @@ def check_port():
         sys.exit(f"Port {config.PORT} is used, maybe you are already running a docker container?")
 
 
+FILES_TO_SEED = [
+    { "table":"Country", "file": "countries.csv" },
+    { "table":"Expertise", "file": "expertise.csv" },
+    { "table":"Industry", "file": "industries.csv" },
+    { "table":"Profession", "file": "professions.csv" },
+    { "table":"Domain", "file": "domains.csv" },
+    { "table":"Location", "file": "locations.csv" },
+    { "table":"Sector", "file": "sectors.csv" },
+    { "table":"Involvement", "file": "involvement.csv" },
+    { "table":"Department", "file": "departments.csv" },
+]
+
+
+def seed_initial_data():
+    seeder = DatabaseSeeder(db)
+    for file in FILES_TO_SEED:
+        seeder.seed_from_csv(file["table"], file["file"])
+
+
 if __name__ in ('app', '__main__'):
     # check_port()
 
@@ -160,6 +180,8 @@ if __name__ in ('app', '__main__'):
 
     if config.INITIAL_ADMIN_EMAIL:
         create_initial_admin(config.INITIAL_ADMIN_EMAIL, config.INITIAL_ADMIN_PASSWORD)
+
+    seed_initial_data()
 
     app.debug = config.ENVIRONMENT == "dev"
     if __name__ == "__main__":

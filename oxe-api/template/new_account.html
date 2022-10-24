@@ -1,13 +1,17 @@
-<p>Dear new user,</p>
-<p>An account has been created with your email.</p>
-<p>Your password: {{password}}</p>
+<p>Dear {{ email }},</p>
+<p>An account has been created with your email address.</p>
 
 <p>
-    To log in, please go to this link:
-    <a href="{{ url }}">
-        click here
+    To verify your email address, please go to this link:
+    <br><br>
+    <a href="{{ url|safe }}">
+        Verify Email Address
     </a>
+    <br>
+    <span style="font-style: italic; font-size: 0.8rem;">This link expires in an hour.</span>
 </p>
-<p>It is recommended to change the password from the profile section.</p>
+
 <p>Sincerely,</p>
-<p>{{ project_name }} Support Team</p>
+<p>
+    <img src="cid:logo" alt="Logo" style="width:200px;">
+</p>
