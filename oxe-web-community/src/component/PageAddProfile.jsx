@@ -127,7 +127,7 @@ export default class PageAddProfile extends React.Component {
 				&& this.state.residency !== "Malta"
 				&& this.state.residency !== "Gozo"
 			) {
-				nm.warning("This account is only available to Maltese or Gozo residents and Maltese nationals");
+				nm.warning("The account is only available to Maltese or Gozo residents or Maltese nationals");
 				valid = false;
 			}
 		}
@@ -441,7 +441,7 @@ export default class PageAddProfile extends React.Component {
 									<div className={"FormLine-label"}>
 										Please read and agree to the &nbsp;
 										<a href='https://ncc-mita.gov.mt/community-code-of-conduct/'>Community&apos; s Code of Conduct</a> &amp;&nbsp;
-										<a href='https://ncc-mita.gov.mt/data-protection-policy/'>Privacy Policy and Terms of Use</a>.
+										<a href='https://ncc-mita.gov.mt/privacy-policy/'>Privacy Policy and Terms of Use</a>.
 									</div>
 								</div>
 							</div>

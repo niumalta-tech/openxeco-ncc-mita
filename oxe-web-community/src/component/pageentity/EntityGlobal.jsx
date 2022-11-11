@@ -29,12 +29,13 @@ export default class EntityGlobal extends React.Component {
 			},
 			address: null,
 			contact: null,
+			user: null,
 		};
 	}
 
 	componentDidMount() {
 		this.getAddresses();
-		this.getContacts();
+		this.getContact();
 	}
 
 	getAddresses() {
@@ -53,14 +54,14 @@ export default class EntityGlobal extends React.Component {
 		});
 	}
 
-	getContacts() {
+	getContact() {
 		this.setState({
 			contact: null,
 		});
 
 		getRequest.call(this, "private/get_my_entity_contacts/" + this.props.entity.id, (data) => {
 			this.setState({
-				contact: data[0],
+				contact: data,
 			});
 		}, (response) => {
 			nm.warning(response.statusText);
@@ -169,43 +170,48 @@ export default class EntityGlobal extends React.Component {
 						/>
 						<FormLine
 							label={"Entity Type"}
-							value={this.props.entity.entity_type}
+							value={this.props.entity.entity_type || ""}
 							disabled={true}
 						/>
 						<FormLine
 							label={"VAT Number"}
-							value={this.props.entity.vat_number}
+							value={this.props.entity.vat_number || ""}
 							disabled={true}
 						/>
 						<FormLine
 							label={"Website"}
-							value={this.props.entity.website}
+							value={this.props.entity.website || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Company Email"}
+							value={this.props.entity.email || ""}
 							disabled={true}
 						/>
 						<FormLine
 							label={"Size"}
-							value={this.props.entity.size}
+							value={this.props.entity.size || ""}
 							disabled={true}
 						/>
 						<FormLine
 							label={"Sector"}
-							value={this.props.entity.sector}
+							value={this.props.entity.sector || ""}
 							disabled={true}
 						/>
 						<FormLine
 							label={"Industry"}
-							value={this.props.entity.industry}
+							value={this.props.entity.industry || ""}
 							disabled={true}
 						/>
 						<FormLine
 							label={"Primary involvement"}
-							value={this.props.entity.involvement}
+							value={this.props.entity.involvement || ""}
 							disabled={true}
 						/>
 					</div>
 
-					{this.state.address !== null
-						&& <>
+					{(this.state.address !== null && this.state.address !== undefined)
+						? <>
 							<div className="col-md-12">
 								<h2>Address</h2>
 							</div>
@@ -216,7 +222,7 @@ export default class EntityGlobal extends React.Component {
 									disabled={true}
 								/>
 								<FormLine
-									label={"Address Line 1"}
+									label={"Address Line 2"}
 									value={this.state.address.address_2}
 									disabled={true}
 								/>
@@ -237,9 +243,17 @@ export default class EntityGlobal extends React.Component {
 								/>
 							</div>
 						</>
+						: <>
+							<div className="col-md-12">
+								<h2>Address</h2>
+							</div>
+							<div className="col-md-12">
+								No address set
+							</div>
+						</>
 					}
-					{this.state.contact !== null
-						&& <>
+					{(this.state.contact !== null && this.state.contact !== undefined)
+						? <>
 							<div className="col-md-12">
 								<h2>Contact</h2>
 							</div>
@@ -249,31 +263,47 @@ export default class EntityGlobal extends React.Component {
 									value={this.state.contact.name}
 									disabled={true}
 								/>
-								{this.state.contact.type === "EMAIL ADDRESS"
-									? <FormLine
-										label={"Email Address"}
-										value={this.state.contact.value}
-										disabled={true}
-									/>
-									: <FormLine
-										label={"Email Address"}
-										value={""}
-										disabled={true}
-									/>
-								}
-								{this.state.contact.type === "PHONE NUMBER"
-									? <FormLine
-										label={"Phone Number"}
-										value={this.state.contact.value}
-										disabled={true}
-									/>
-									: <FormLine
-										label={"Phone Number"}
-										value={""}
-										disabled={true}
-									/>
-								}
 
+								<FormLine
+									label={"Email Address"}
+									value={this.state.contact.work_email}
+									disabled={true}
+								/>
+
+								<FormLine
+									label={"Work Telephone"}
+									value={this.state.contact.work_telephone}
+									disabled={true}
+								/>
+
+								{this.state.contact.primary
+									&& <>
+										<FormLine
+											label={"Department"}
+											value={this.state.contact.department}
+											disabled={true}
+										/>
+
+										<FormLine
+											label={"Seniority Level"}
+											value={this.state.contact.seniority_level}
+											disabled={true}
+										/>
+										<FormLine
+											label={"Acknowledged"}
+											value={this.state.contact.acknowledged}
+											disabled={true}
+										/>
+									</>
+								}
+							</div>
+						</>
+						: <>
+							<div className="col-md-12">
+								<h2>Contact</h2>
+							</div>
+							<div className="col-md-12">
+								No contact set
 							</div>
 						</>
 					}

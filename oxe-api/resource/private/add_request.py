@@ -52,10 +52,11 @@ class AddRequest(MethodResource, Resource):
         user_id = get_jwt_identity()
         # Control image
 
-        if "vat_number" in kwargs["data"]:
-            data = self.db.get(self.db.tables["Entity"], {"vat_number": kwargs["data"]["vat_number"]})
-            if len(data) > 0:
-                return "", "422 The VAT Number you entered has already been registered"
+        if "data" in kwargs:
+            if "vat_number" in kwargs["data"]:
+                data = self.db.get(self.db.tables["Entity"], {"vat_number": kwargs["data"]["vat_number"]})
+                if len(data) > 0:
+                    return "", "422 The VAT Number you entered has already been registered"
 
         if "image" in kwargs and kwargs["image"] is not None:
             try:
@@ -82,7 +83,7 @@ class AddRequest(MethodResource, Resource):
             old_document = self.db.get(self.db.tables["Document"], { "filename": filename })
             if len(old_document) > 0:
                 self.db.delete(self.db.tables["Document"], { "filename": filename })
-            self.db.insert(document, self.db.tables["Document"])
+            document = self.db.insert(document, self.db.tables["Document"])
 
             try:
                 decoded_data = base64.b64decode(kwargs["uploaded_file"].split(",")[-1])
@@ -90,7 +91,7 @@ class AddRequest(MethodResource, Resource):
                 traceback.print_exc()
                 return "", "422 Impossible to read the file"
             try:
-                f = open(os.path.join(DOCUMENT_FOLDER, filename), 'wb')
+                f = open(os.path.join(DOCUMENT_FOLDER,  str(document.id)), 'wb')
                 f.write(decoded_data)
                 f.close()
                 file = filename
@@ -111,6 +112,31 @@ class AddRequest(MethodResource, Resource):
             except NoResultFound:
                 return "", "422 Object not found or you don't have the required access to it"
 
+        if kwargs["type"] == "NEW INDIVIDUAL ACCOUNT":
+            data = self.db.get(self.db.tables["User"], {"id": get_jwt_identity()})
+            if len(data) == 0:
+                return "", "401 The user has not been found"
+
+            user_check = self.db.get(self.db.tables["UserRequest"], {
+                "user_id": get_jwt_identity(),
+                "type": "NEW INDIVIDUAL ACCOUNT"
+            })
+            if len(user_check) > 0:
+                return "", "401 You have already submitted your profile for review"
+
+            user = data[0]
+            user.status = "REQUESTED"
+            self.db.merge(user, self.db.tables["User"])
+
+        if kwargs["type"] == "ENTITY ASSOCIATION CLAIM":
+            assignments = self.db.get(self.db.tables["UserEntityAssignment"], {
+                "user_id": get_jwt_identity(),
+                "entity_id": kwargs["data"]["entity_id"]
+            })
+            if len(assignments) > 0:
+                return "", "401 You are already associated with this entity"
+
+
         # Insert request
         user_request = {
             "user_id": int(user_id),
@@ -123,13 +149,5 @@ class AddRequest(MethodResource, Resource):
         }
 
         self.db.insert(user_request, self.db.tables["UserRequest"])
-
-        if kwargs["type"] == "NEW INDIVIDUAL ACCOUNT":
-            data = self.db.get(self.db.tables["User"], {"id": get_jwt_identity()})
-            if len(data) == 0:
-                return "", "401 The user has not been found"
-            user = data[0]
-            user.status = "REQUESTED"
-            self.db.merge(user, self.db.tables["User"])
 
         return "", "200 "
