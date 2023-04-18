@@ -3,10 +3,10 @@ import "./Login.css";
 import { NotificationManager as nm } from "react-notifications";
 import FormLine from "./button/FormLine.jsx";
 import { getRequest, postRequest } from "../utils/request.jsx";
-import { validatePassword } from "../utils/re.jsx";
+import { validatePassword, validateOtp } from "../utils/re.jsx";
 import Info from "./box/Info.jsx";
 import { getUrlParameter } from "../utils/url.jsx";
-import { getCookieOptions, getApiURL } from "../utils/env.jsx";
+import { getApiURL } from "../utils/env.jsx";
 import Version from "./box/Version.jsx";
 
 export default class Login extends React.Component {
@@ -18,6 +18,7 @@ export default class Login extends React.Component {
 		this.requestReset = this.requestReset.bind(this);
 		this.resetPassword = this.resetPassword.bind(this);
 		this.onKeyDown = this.onKeyDown.bind(this);
+		this.verifyLogin = this.verifyLogin.bind(this);
 
 		this.state = {
 			settings: null,
@@ -25,6 +26,8 @@ export default class Login extends React.Component {
 			password: "",
 			passwordConfirmation: "",
 			view: getUrlParameter("action") === "reset_password" ? "reset" : "login",
+			verifyLogin: false,
+			user: null,
 		};
 	}
 
@@ -35,27 +38,26 @@ export default class Login extends React.Component {
 		// Get the token if the user reaches the app though a password reset URL
 
 		if (getUrlParameter("action") === "reset_password") {
-			// TODO use httponly cookies
-			this.props.cookies.set("access_token_cookie", getUrlParameter("token"), getCookieOptions());
+			this.props.cookies.set("access_token_cookie", getUrlParameter("token"), {});
 		}
 
 		// Log in the user if there is an existing cookie
 
 		if (getUrlParameter("action") !== "reset_password") {
-			if (this.props.cookies.get("access_token_cookie")) {
-				getRequest.call(this, "private/get_my_user", (data) => {
-					if (data.is_admin === 1) {
-						this.props.connect(data.id);
-					} else {
-						this.props.cookies.remove("access_token_cookie");
-						nm.warning("This user is not an admin");
-					}
-				}, (response2) => {
+			getRequest.call(this, "private/get_my_user", (data) => {
+				if (data.is_admin === 1) {
+					this.props.connect(data.id);
+				} else {
+					this.props.logout();
+					nm.warning("This user is not an admin");
+				}
+			}, (response2) => {
+				if (response2.status !== 401 && response2.status !== 422) {
 					nm.warning(response2.statusText);
-				}, (error) => {
-					nm.error(error.message);
-				});
-			}
+				}
+			}, (error) => {
+				nm.error(error.message);
+			});
 		}
 
 		// This function to notify if the password has been reset correctly
@@ -96,15 +98,33 @@ export default class Login extends React.Component {
 			password: this.state.password,
 		};
 
-		postRequest.call(this, "account/login", params, (response) => {
+		postRequest.call(this, "account/login", params, () => {
 			// TODO use httponly cookies
-			this.props.cookies.set("access_token_cookie", response.access_token, getCookieOptions());
+			nm.info("Please check your email for the One Time Pin");
+			this.setState({ verifyLogin: true });
+		}, (response) => {
+			nm.warning(response.statusText);
+		}, (error) => {
+			nm.error(error.message);
+		});
+	}
 
+	verifyLogin() {
+		if (!validateOtp(this.state.otp)) {
+			nm.warning("This one time pin is invalid.");
+			return;
+		}
+		const params = {
+			email: this.state.email,
+			token: this.state.otp,
+		};
+		postRequest.call(this, "account/verify_login", params, () => {
+			// this.props.cookies.set("access_token_cookie", response.access_token, getCookieOptions());
 			getRequest.call(this, "private/get_my_user", (data) => {
 				if (data.is_admin === 1) {
-					this.props.connect(response.user);
+					this.props.connect(data);
 				} else {
-					this.props.cookies.remove("access_token_cookie");
+					this.props.logout();
 					nm.warning("This user is not an admin");
 				}
 			}, (response2) => {
@@ -125,7 +145,7 @@ export default class Login extends React.Component {
 		};
 
 		postRequest.call(this, "account/forgot_password", params, () => {
-			nm.info("An email has been sent with a link to reset your password");
+			nm.info("If that email address is in our database, we will send you an email to reset your password");
 		}, (response) => {
 			nm.warning(response.statusText);
 		}, (error) => {
@@ -139,6 +159,7 @@ export default class Login extends React.Component {
 		};
 
 		postRequest.call(this, "account/reset_password", params, () => {
+			this.props.cookies.remove("access_token_cookie", {});
 			document.location.href = "/?reset_password=true";
 		}, (response) => {
 			nm.warning(response.statusText);
@@ -147,9 +168,16 @@ export default class Login extends React.Component {
 		});
 	}
 
+	backToLogin() {
+		this.props.cookies.remove("access_token_cookie", {});
+		this.setState({ view: "login" });
+		window.history.pushState({ path: "/login" }, "", "/login");
+	}
+
 	onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
 		if (event.key === "Enter" || event.code === "NumpadEnter") {
-			if (this.state.view === "login") this.login();
+			if (this.state.view === "login" && !this.state.verifyLogin) this.login();
+			if (this.state.view === "login" && this.state.verifyLogin) this.verifyLogin();
 			if (this.state.view === "forgot") this.requestReset();
 			if (this.state.view === "reset") this.resetPassword();
 		}
@@ -182,52 +210,99 @@ export default class Login extends React.Component {
 					<div id="Login-inner-box">
 						{this.state.view === "login"
 							&& <div>
-								<div className="Login-title">
-									<h1>
-										{this.state.settings !== null
-											&& this.state.settings.ADMIN_PLATFORM_NAME !== undefined
-											? "Welcome to " + this.state.settings.ADMIN_PLATFORM_NAME
-											: "Welcome"}
-										<div className={"Login-title-small"}>
-											{this.state.settings !== null
-												&& this.state.settings.PROJECT_NAME !== undefined
-												? "Administration platform of " + this.state.settings.PROJECT_NAME
-												: "Administration platform"}
+								{this.state.verifyLogin === false
+									&& <>
+										<div className="Login-title">
+											<h1>
+												{this.state.settings !== null
+													&& this.state.settings.ADMIN_PLATFORM_NAME !== undefined
+													? "Welcome to " + this.state.settings.ADMIN_PLATFORM_NAME
+													: "Welcome"}
+												<div className={"Login-title-small"}>
+													{this.state.settings !== null
+														&& this.state.settings.PROJECT_NAME !== undefined
+														? "Administration platform of " + this.state.settings.PROJECT_NAME
+														: "Administration platform"}
+												</div>
+											</h1>
 										</div>
-									</h1>
-								</div>
-								<FormLine
-									label="Email"
-									fullWidth={true}
-									value={this.state.email}
-									onChange={(v) => this.changeState("email", v)}
-									autofocus={true}
-									onKeyDown={this.onKeyDown}
-								/>
-								<FormLine
-									label="Password"
-									type={"password"}
-									fullWidth={true}
-									value={this.state.password}
-									onChange={(v) => this.changeState("password", v)}
-									onKeyDown={this.onKeyDown}
-								/>
-								<div className="bottom-right-buttons">
-									<button
-										className="blue-button"
-										onClick={this.login}
-									>
-										Login
-									</button>
-								</div>
-								<div className="bottom-left-buttons">
-									<button
-										className="link-button"
-										onClick={() => this.changeState("view", "forgot")}
-									>
-										I forgot my password
-									</button>
-								</div>
+										<FormLine
+											label="Email"
+											fullWidth={true}
+											value={this.state.email}
+											onChange={(v) => this.changeState("email", v)}
+											autofocus={true}
+											onKeyDown={this.onKeyDown}
+										/>
+										<FormLine
+											label="Password"
+											type={"password"}
+											fullWidth={true}
+											value={this.state.password}
+											onChange={(v) => this.changeState("password", v)}
+											onKeyDown={this.onKeyDown}
+										/>
+										<div className="bottom-right-buttons">
+											<button
+												className="blue-button"
+												onClick={this.login}
+											>
+												Login
+											</button>
+										</div>
+										<div className="bottom-left-buttons">
+											<button
+												className="link-button"
+												onClick={() => this.changeState("view", "forgot")}
+											>
+												I forgot my password
+											</button>
+										</div>
+									</>
+								}
+								{this.state.verifyLogin === true
+									&& <div className="col-md-12">
+										<div className="Login-title">
+											Verify Login
+										</div>
+										<FormLine
+											label="Please enter the One Time Pin you received via email"
+											fullWidth={true}
+											value={this.state.otp}
+											onChange={(v) => this.changeState("otp", v)}
+											autofocus={true}
+											onKeyDown={this.onKeyDown}
+											format={validateOtp}
+										/>
+
+										<div>
+											<div className="right-buttons">
+												<button
+													className="blue-button"
+													onClick={this.verifyLogin}
+												>
+													Submit
+												</button>
+											</div>
+											<div className="left-buttons">
+												<button
+													className="link-button"
+													onClick={this.login}
+												>
+													Resend Code
+												</button>
+											</div>
+											<div className="left-buttons">
+												<button
+													className="link-button"
+													onClick={() => this.changeState("verifyLogin", false)}
+												>
+													Back to login
+												</button>
+											</div>
+										</div>
+									</div>
+								}
 							</div>
 						}
 
@@ -257,7 +332,7 @@ export default class Login extends React.Component {
 								<div className="bottom-left-buttons">
 									<button
 										className="link-button"
-										onClick={() => this.changeState("view", "login")}
+										onClick={() => this.backToLogin()}
 									>
 										Back to login
 									</button>
@@ -279,8 +354,9 @@ export default class Login extends React.Component {
 											<li>contain at least 1 lowercase alphabetical character</li>
 											<li>contain at least 1 uppercase alphabetical character</li>
 											<li>contain at least 1 numeric character</li>
-											<li>contain at least 1 special character such as !@#$%^&*</li>
+											<li>contain at least 1 special character being !@#$%^&*</li>
 											<li>be between 8 and 30 characters long</li>
+											<li>not contain any part of a name, surname or both</li>
 										</div>
 									}
 								/>
@@ -318,7 +394,7 @@ export default class Login extends React.Component {
 								<div className="bottom-left-buttons">
 									<button
 										className="link-button"
-										onClick={() => window.location.replace("/")}
+										onClick={() => this.backToLogin()}
 									>
 										Back to login
 									</button>

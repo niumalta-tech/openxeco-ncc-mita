@@ -10,7 +10,7 @@ import { getRequest, postRequest } from "../utils/request.jsx";
 import { validatePassword, validateTelephoneNumber } from "../utils/re.jsx";
 // import { getApiURL } from "../utils/env.jsx";
 import Loading from "./box/Loading.jsx";
-// import Message from "./box/Message.jsx";
+import Message from "./box/Message.jsx";
 
 export default class PageProfile extends React.Component {
 	constructor(props) {
@@ -155,6 +155,11 @@ export default class PageProfile extends React.Component {
 		let loop = 0;
 		if (!Array.isArray(this.state.currentVcard.get("socialprofile"))) {
 			properties = [properties];
+		}
+
+		if (this.state.currentVcard && this.state.currentVcard.data
+			&& this.state.currentVcard.data.socialprofile) {
+			delete this.state.currentVcard.data.socialprofile;
 		}
 
 		properties.filter((p, i) => i !== pos).forEach((p) => {
@@ -333,7 +338,6 @@ export default class PageProfile extends React.Component {
 													label={"Current password"}
 													value={this.state.password}
 													onChange={(v) => this.changeState("password", v)}
-													format={validatePassword}
 													type={"password"}
 												/>
 												<Info
@@ -343,8 +347,9 @@ export default class PageProfile extends React.Component {
 															<li>contain at least 1 lowercase alphabetical character</li>
 															<li>contain at least 1 uppercase alphabetical character</li>
 															<li>contain at least 1 numeric character</li>
-															<li>contain at least 1 special character such as !@#$%^&*</li>
+															<li>contain at least 1 special character being !@#$%^&*</li>
 															<li>be between 8 and 30 characters long</li>
+															<li>not contain any part of a name, surname or both</li>
 														</div>
 													}
 												/>
@@ -362,11 +367,12 @@ export default class PageProfile extends React.Component {
 													format={validatePassword}
 													type={"password"}
 												/>
+											</div>
+											<div className="col-md-12">
 												<div className="right-buttons">
 													<button
 														onClick={() => this.changePassword(close)}
-														disabled={!validatePassword(this.state.password)
-															|| !validatePassword(this.state.newPassword)
+														disabled={!validatePassword(this.state.newPassword)
 															|| !validatePassword(this.state.newPasswordConfirmation)
 															|| this.state.newPassword !== this.state.newPasswordConfirmation}>
 														Change password
@@ -467,7 +473,7 @@ export default class PageProfile extends React.Component {
 									onChange={(v) => this.updateCurrentVcard("tel", v ? this.state.currentUser.telephone : null)}
 								/>
 							</div>
-							{/* <div className="col-md-12 PageProfile-white-box">
+							<div className="col-md-12 PageProfile-white-box">
 								<h3>Social media and website</h3>
 								<br/>
 
@@ -487,7 +493,7 @@ export default class PageProfile extends React.Component {
 														{ label: "Instragram", value: "Instragram" },
 														{ label: "Medium", value: "Medium" },
 														{ label: "GitHub", value: "GitHub" },
-														{ label: "BitBucket", value: "BitBucket" },
+														// { label: "BitBucket", value: "BitBucket" },
 														{ label: "Other", value: "Other" },
 													]}
 													value={s.type}
@@ -526,7 +532,7 @@ export default class PageProfile extends React.Component {
 										<i className="fas fa-plus"/> Add
 									</button>
 								</div>
-							</div> */}
+							</div>
 						</div>
 					</div>
 				</div>

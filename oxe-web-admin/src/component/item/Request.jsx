@@ -38,6 +38,7 @@ export default class Request extends Component {
 			settings: null,
 			currentStatus: this.props.info.status,
 			email_content: "",
+			subject: "Request Processed",
 		};
 	}
 
@@ -431,8 +432,7 @@ export default class Request extends Component {
 									</button>
 								}
 								email={this.state.user.email}
-								subject={(this.getSettingValue("PROJECT_NAME") !== null
-									? "[" + this.getSettingValue("PROJECT_NAME") + "] " : "") + "Treated request"}
+								subject={this.state.subject}
 								content={this.state.email_content}
 							/>
 							: <Loading

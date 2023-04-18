@@ -21,7 +21,7 @@ class SendMail(MethodResource, Resource):
 
     @log_request
     @doc(tags=['mail'],
-         description='Save the HTML content of the specified mail template name (new_account or reset_password)',
+         description='Save the HTML content of the specified mail template name (account_creation or password_reset)',
          responses={
              "200": {},
              "404": {"description": "This mail template does not exist"},
@@ -56,7 +56,7 @@ class SendMail(MethodResource, Resource):
             cc = [data[0].email]
 
         send_email(self.mail,
-            subject=f"Account verified",
+            subject=kwargs["subject"],
             recipients=[kwargs["address"]],
             cc=cc,
             html_body=render_template(

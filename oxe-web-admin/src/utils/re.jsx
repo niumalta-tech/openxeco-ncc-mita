@@ -35,10 +35,16 @@ export function validateUrl(value) {
 }
 
 export function extractEmails(text) {
-	const items = text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi);
+	const items = text.match(/(?<name>[\w.]+)@(?<domain>\w+\.\w+)(\.\w+)?/gi);
 	if (!items) {
 		return [];
 	}
 
 	return items;
+}
+
+export function validateOtp(otp) {
+	if (otp === null || typeof otp === "undefined" || otp.length === 0) return false;
+	const re = /^[0-9]{6}$/;
+	return re.test(String(otp).toUpperCase()) || !otp;
 }

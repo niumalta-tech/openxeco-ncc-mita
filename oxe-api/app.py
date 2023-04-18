@@ -30,7 +30,7 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["ERROR_404_HELP"] = False
 
 app.config["JWT_SECRET_KEY"] = config.JWT_SECRET_KEY
-app.config["JWT_TOKEN_LOCATION"] = ['headers', 'cookies']
+app.config["JWT_TOKEN_LOCATION"] = ['headers', 'cookies', 'query_string']
 app.config["JWT_COOKIE_SECURE"] = config.ENVIRONMENT != "dev"
 app.config['JWT_COOKIE_CSRF_PROTECT'] = False
 
@@ -46,7 +46,9 @@ app.config['MAIL_USE_TLS'] = config.MAIL_USE_TLS == "True"
 app.config['MAIL_USE_SSL'] = config.MAIL_USE_SSL == "True"
 app.config['MAIL_DEFAULT_SENDER'] = config.MAIL_DEFAULT_SENDER
 
-app.config['PROPAGATE_EXCEPTIONS'] = config.ENVIRONMENT == "dev"
+app.config['PROPAGATE_EXCEPTIONS'] = True
+
+app.config['SESSION_COOKIE_SECURE'] = True
 
 app.config['SCHEDULER_API_ENABLED'] = False
 
@@ -54,7 +56,7 @@ app.config['APISPEC_SWAGGER_URL'] = '/doc/json'
 app.config['APISPEC_SWAGGER_UI_URL'] = '/doc'
 app.config['APISPEC_SPEC'] = APISpec(
     title='openXeco API',
-    version='v1.13',
+    version='v1.15',
     plugins=[MarshmallowPlugin()],
     openapi_version='2.0.0'
 )
@@ -109,13 +111,6 @@ def create_initial_admin(email, password):
         "'Administrator' user group"
     )
 
-    for resource in get_admin_post_resources(api):
-        create_row_if_not_exists(
-            db.tables["UserGroupRight"],
-            {"group_id": user_group.id, "resource": resource},
-            "User group right '/user/add_user_group_right'"
-        )
-
     create_row_if_not_exists(
         db.tables["UserGroupAssignment"],
         {"user_id": admin.id, "group_id": user_group.id},
@@ -123,6 +118,19 @@ def create_initial_admin(email, password):
     )
 
     app.logger.warning(f"The initial admin has been created with the following password: {password}")
+
+
+def create_admin_rights():
+    user_group = db.get(db.tables["UserGroup"], {"name": "Administrator"})[0]
+
+    for resource in get_admin_post_resources(api):
+        create_row_if_not_exists(
+            db.tables["UserGroupRight"],
+            {"group_id": user_group.id, "resource": resource},
+            "User group right '/user/add_user_group_right'"
+        )
+
+    app.logger.warning(f"Admin rights have been updated")
 
 
 def create_row_if_not_exists(table, row, log_base):
@@ -180,6 +188,8 @@ if __name__ in ('app', '__main__'):
 
     if config.INITIAL_ADMIN_EMAIL:
         create_initial_admin(config.INITIAL_ADMIN_EMAIL, config.INITIAL_ADMIN_PASSWORD)
+
+    create_admin_rights()
 
     seed_initial_data()
 

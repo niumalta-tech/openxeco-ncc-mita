@@ -3,10 +3,10 @@ import "./Login.css";
 import { NotificationManager as nm } from "react-notifications";
 import FormLine from "./form/FormLine.jsx";
 import { getRequest, postRequest } from "../utils/request.jsx";
-import { validatePassword, validateEmail } from "../utils/re.jsx";
+import { validatePassword, validateEmail, validateOtp } from "../utils/re.jsx";
 import Info from "./box/Info.jsx";
 import { getUrlParameter } from "../utils/url.jsx";
-import { getCookieOptions, getGlobalAppURL, getApiURL } from "../utils/env.jsx";
+import { getGlobalAppURL, getApiURL } from "../utils/env.jsx";
 // import DialogHint from "./dialog/DialogHint.jsx";
 import Version from "./box/Version.jsx";
 
@@ -19,6 +19,7 @@ export default class Login extends React.Component {
 		this.requestReset = this.requestReset.bind(this);
 		this.resetPassword = this.resetPassword.bind(this);
 		this.onKeyDown = this.onKeyDown.bind(this);
+		this.verifyLogin = this.verifyLogin.bind(this);
 
 		let view = null;
 
@@ -45,8 +46,10 @@ export default class Login extends React.Component {
 			partOfEntity: false,
 			entity: "",
 			entityDepartment: "",
+			otp: "",
 			checkedVerified: false,
 			verified: false,
+			verifyLogin: false,
 		};
 	}
 
@@ -55,8 +58,7 @@ export default class Login extends React.Component {
 		// Get the token if the user reaches the app though a password reset URL
 
 		if (getUrlParameter("action") === "reset_password") {
-			// TODO use httponly cookies
-			this.props.cookies.set("access_token_cookie", getUrlParameter("token"), getCookieOptions());
+			this.props.cookies.set("access_token_cookie", getUrlParameter("token"), {});
 		}
 
 		// Get the token if the user reaches the app though acount verification URL
@@ -92,7 +94,9 @@ export default class Login extends React.Component {
 			this.props.connect(data.email);
 			this.props.setUserStatus(data.status);
 		}, (response2) => {
-			nm.warning(response2.statusText);
+			if (response2.status !== 401 && response2.status !== 422) {
+				nm.warning(response2.statusText);
+			}
 		}, (error) => {
 			nm.error(error.message);
 		});
@@ -122,9 +126,28 @@ export default class Login extends React.Component {
 			password: this.state.password,
 		};
 
-		postRequest.call(this, "account/login", params, (response) => {
-			this.props.cookies.set("access_token_cookie", response.access_token, getCookieOptions());
-			this.props.connect(this.state.email);
+		postRequest.call(this, "account/login", params, () => {
+			nm.info("Please check your email for the One Time Pin");
+			this.setState({ verifyLogin: true });
+		}, (response) => {
+			nm.warning(response.statusText);
+		}, (error) => {
+			nm.error(error.message);
+		});
+	}
+
+	verifyLogin() {
+		if (!validateOtp(this.state.otp)) {
+			nm.warning("This one time pin is invalid.");
+			return;
+		}
+		const params = {
+			email: this.state.email,
+			token: this.state.otp,
+		};
+		postRequest.call(this, "account/verify_login", params, () => {
+			// this.props.cookies.set("access_token_cookie", response.access_token, getCookieOptions());
+			// this.props.connect(this.state.email);
 			this.fetchUser();
 		}, (response) => {
 			nm.warning(response.statusText);
@@ -164,11 +187,11 @@ export default class Login extends React.Component {
 		};
 
 		postRequest.call(this, "account/forgot_password", params, () => {
-			nm.info("An email has been sent with a link to reset your password");
-		}, () => {
-			nm.info("An email has been sent with a link to reset your password");
-		}, () => {
-			nm.info("An email has been sent with a link to reset your password");
+			nm.info("If that email address is in our database, we will send you an email to reset your password");
+		}, (response) => {
+			nm.warning(response.statusText);
+		}, (error) => {
+			nm.error(error.message);
 		});
 	}
 
@@ -184,6 +207,7 @@ export default class Login extends React.Component {
 		};
 
 		postRequest.call(this, "account/reset_password", params, () => {
+			this.props.cookies.remove("access_token_cookie", {});
 			document.location.href = "/?reset_password=true";
 		}, (response) => {
 			nm.warning(response.statusText);
@@ -192,9 +216,16 @@ export default class Login extends React.Component {
 		});
 	}
 
+	backToLogin() {
+		this.props.cookies.remove("access_token_cookie", {});
+		this.setState({ view: "login" });
+		window.history.pushState({ path: "/login" }, "", "/login");
+	}
+
 	onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
 		if (event.key === "Enter" || event.code === "NumpadEnter") {
-			if (this.state.view === "login") this.login();
+			if (this.state.view === "login" && !this.state.verifyLogin) this.login();
+			if (this.state.view === "login" && this.state.verifyLogin) this.verifyLogin();
 			if (this.state.view === "create") this.createAccount();
 			if (this.state.view === "forgot") this.requestReset();
 			if (this.state.view === "reset") this.resetPassword();
@@ -402,69 +433,119 @@ export default class Login extends React.Component {
 				</div>
 				<div id="Login-box" className={"fade-in"}>
 					<div id="Login-inner-box">
+
 						{this.state.view === "login"
 							&& <div className="row">
-								<div className="col-md-12">
-									<div className="Login-title">
-										{this.props.settings !== null
-											&& this.props.settings.PRIVATE_SPACE_PLATFORM_NAME !== undefined
-											? this.props.settings.PRIVATE_SPACE_PLATFORM_NAME
-											: "PRIVATE SPACE"
-										}
 
-										{this.props.settings !== null
-											&& this.props.settings.PROJECT_NAME !== undefined
-											&& <div className={"Login-title-small"}>
-												{this.props.settings.PROJECT_NAME} private space
+								{this.state.verifyLogin === false
+									&& <>
+										<div className="col-md-12">
+											<div className="Login-title">
+												{this.props.settings !== null
+													&& this.props.settings.PRIVATE_SPACE_PLATFORM_NAME !== undefined
+													? this.props.settings.PRIVATE_SPACE_PLATFORM_NAME
+													: "PRIVATE SPACE"
+												}
+
+												{this.props.settings !== null
+													&& this.props.settings.PROJECT_NAME !== undefined
+													&& <div className={"Login-title-small"}>
+														{this.props.settings.PROJECT_NAME} private space
+													</div>
+												}
 											</div>
-										}
-									</div>
-								</div>
-								<div className="col-md-12">
-									<FormLine
-										label="Email"
-										fullWidth={true}
-										value={this.state.email}
-										onChange={(v) => this.changeState("email", v)}
-										autofocus={true}
-										onKeyDown={this.onKeyDown}
-									/>
-									<FormLine
-										label="Password"
-										type={"password"}
-										fullWidth={true}
-										value={this.state.password}
-										onChange={(v) => this.changeState("password", v)}
-										onKeyDown={this.onKeyDown}
-									/>
+										</div>
+										<div className="col-md-12">
+											<FormLine
+												label="Email"
+												fullWidth={true}
+												value={this.state.email}
+												onChange={(v) => this.changeState("email", v)}
+												autofocus={true}
+												onKeyDown={this.onKeyDown}
+											/>
+											<FormLine
+												label="Password"
+												type={"password"}
+												fullWidth={true}
+												value={this.state.password}
+												onChange={(v) => this.changeState("password", v)}
+												onKeyDown={this.onKeyDown}
+											/>
 
-									<div>
-										<div className="right-buttons">
-											<button
-												className="blue-button"
-												onClick={this.login}
-											>
-												Login
-											</button>
+											<div>
+												<div className="right-buttons">
+													<button
+														className="blue-button"
+														onClick={this.login}
+													>
+														Login
+													</button>
+												</div>
+												<div className="left-buttons">
+													<button
+														className="link-button"
+														onClick={() => this.changeState("view", "create")}
+													>
+														I want to create an account
+													</button>
+												</div>
+												<div className="left-buttons">
+													<button
+														className="link-button"
+														onClick={() => this.changeState("view", "forgot")}
+													>
+														I forgot my password
+													</button>
+												</div>
+											</div>
 										</div>
-										<div className="left-buttons">
-											<button
-												className="link-button"
-												onClick={() => this.changeState("view", "create")}
-											>
-												I want to create an account
-											</button>
+									</>
+								}
+
+								{this.state.verifyLogin === true
+									&& <div className="col-md-12">
+										<div className="Login-title">
+											Verify Login
 										</div>
-										<div className="left-buttons">
-											<button
-												className="link-button"
-												onClick={() => this.changeState("view", "forgot")}
-											>
-												I forgot my password
-											</button>
+										<FormLine
+											label="Please enter the One Time Pin you received via email"
+											fullWidth={true}
+											value={this.state.otp}
+											onChange={(v) => this.changeState("otp", v)}
+											autofocus={true}
+											onKeyDown={this.onKeyDown}
+											format={validateOtp}
+										/>
+
+										<div>
+											<div className="right-buttons">
+												<button
+													className="blue-button"
+													onClick={this.verifyLogin}
+												>
+													Submit
+												</button>
+											</div>
+											<div className="left-buttons">
+												<button
+													className="link-button"
+													onClick={this.login}
+												>
+													Resend Code
+												</button>
+											</div>
+											<div className="left-buttons">
+												<button
+													className="link-button"
+													onClick={() => this.changeState("verifyLogin", false)}
+												>
+													Back to login
+												</button>
+											</div>
 										</div>
 									</div>
-								</div>
+								}
 							</div>
 						}
 
@@ -515,8 +596,9 @@ export default class Login extends React.Component {
 												<li>contain at least 1 lowercase alphabetical character</li>
 												<li>contain at least 1 uppercase alphabetical character</li>
 												<li>contain at least 1 numeric character</li>
-												<li>contain at least 1 special character such as !@#$%^&*</li>
+												<li>contain at least 1 special character being !@#$%^&*</li>
 												<li>be between 8 and 30 characters long</li>
+												<li>not contain any part of a name, surname or both</li>
 											</div>
 											<br />
 										</>
@@ -543,7 +625,7 @@ export default class Login extends React.Component {
 									<div className="left-buttons">
 										<button
 											className="link-button"
-											onClick={() => this.changeState("view", "login")}
+											onClick={() => this.backToLogin()}
 										>
 											Back to login
 										</button>
@@ -578,7 +660,7 @@ export default class Login extends React.Component {
 								<div className="left-buttons">
 									<button
 										className="link-button"
-										onClick={() => this.changeState("view", "login")}
+										onClick={() => this.backToLogin()}
 									>
 										Back to login
 									</button>
@@ -599,8 +681,9 @@ export default class Login extends React.Component {
 											<li>contain at least 1 lowercase alphabetical character</li>
 											<li>contain at least 1 uppercase alphabetical character</li>
 											<li>contain at least 1 numeric character</li>
-											<li>contain at least 1 special character such as !@#$%^&*</li>
+											<li>contain at least 1 special character being !@#$%^&*</li>
 											<li>be between 8 and 30 characters long</li>
+											<li>not contain any part of a name, surname or both</li>
 										</div>
 									}
 								/>
@@ -644,7 +727,7 @@ export default class Login extends React.Component {
 								<div className="left-buttons">
 									<button
 										className="link-button"
-										onClick={() => window.location.replace("/")}
+										onClick={() => this.backToLogin()}
 									>
 										Back to login
 									</button>

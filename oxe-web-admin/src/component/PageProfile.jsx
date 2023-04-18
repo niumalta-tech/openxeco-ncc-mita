@@ -150,6 +150,11 @@ export default class PageProfile extends React.Component {
 			properties = [properties];
 		}
 
+		if (this.state.currentVcard && this.state.currentVcard.data
+			&& this.state.currentVcard.data.socialprofile) {
+			delete this.state.currentVcard.data.socialprofile;
+		}
+
 		properties.filter((p, i) => i !== pos).forEach((p) => {
 			if (loop === 0) {
 				this.state.currentVcard.set("socialprofile", p.valueOf(), { type: p.type });
@@ -313,7 +318,6 @@ export default class PageProfile extends React.Component {
 													label={"Current password"}
 													value={this.state.password}
 													onChange={(v) => this.changeState("password", v)}
-													format={validatePassword}
 													type={"password"}
 												/>
 												<Info
@@ -323,8 +327,9 @@ export default class PageProfile extends React.Component {
 															<li>contain at least 1 lowercase alphabetical character</li>
 															<li>contain at least 1 uppercase alphabetical character</li>
 															<li>contain at least 1 numeric character</li>
-															<li>contain at least 1 special character such as !@#$%^&*</li>
+															<li>contain at least 1 special character being !@#$%^&*</li>
 															<li>be between 8 and 30 characters long</li>
+															<li>not contain any part of a name, surname or both</li>
 														</div>
 													}
 												/>
@@ -342,11 +347,12 @@ export default class PageProfile extends React.Component {
 													format={validatePassword}
 													type={"password"}
 												/>
+											</div>
+											<div className="col-md-12">
 												<div className="right-buttons">
 													<button
 														onClick={() => this.changePassword(close)}
-														disabled={!validatePassword(this.state.password)
-															|| !validatePassword(this.state.newPassword)
+														disabled={!validatePassword(this.state.newPassword)
 															|| !validatePassword(this.state.newPasswordConfirmation)
 															|| this.state.newPassword !== this.state.newPasswordConfirmation}>
 														Change password
@@ -377,26 +383,44 @@ export default class PageProfile extends React.Component {
 					<div className="col-md-8">
 						<div className={"row row-spaced"}>
 							<div className="col-md-12 PageProfile-white-box">
-								<h3>Accessibility</h3>
+								<h3>Administration</h3>
 								<br/>
-
 								<FormLine
-									label={"Make my profile public"}
+									label={"Accept request notification"}
 									type={"checkbox"}
-									value={this.state.user.is_vcard_public}
-									onChange={(v) => this.updateUser("is_vcard_public", v)}
+									value={this.state.user.accept_request_notification}
+									onChange={(v) => this.updateUser("accept_request_notification", v)}
 								/>
-								<FormLine
-									label={"Handle"}
-									disabled={true}
-									value={this.state.user.handle}
-								/>
-								<div className="right-buttons">
-									<button
-										onClick={this.generateHandle}
-										disabled={this.state.value === null}>
-										Generate new handle
-									</button>
+							</div>
+
+							<div className="col-md-12 PageProfile-white-box">
+								<div className={"row"}>
+									<div className="col-md-12">
+										<h3>Accessibility</h3>
+										<br/>
+
+										<FormLine
+											label={"Make my profile public"}
+											type={"checkbox"}
+											value={this.state.user.is_vcard_public}
+											onChange={(v) => this.updateUser("is_vcard_public", v)}
+										/>
+										<FormLine
+											label={"Handle"}
+											disabled={true}
+											value={this.state.user.handle}
+										/>
+									</div>
+
+									<div className="col-md-12">
+										<div className="right-buttons">
+											<button
+												onClick={this.generateHandle}
+												disabled={this.state.value === null}>
+												Generate new handle
+											</button>
+										</div>
+									</div>
 								</div>
 							</div>
 							<div className="col-md-12 PageProfile-white-box">
@@ -426,63 +450,69 @@ export default class PageProfile extends React.Component {
 								/>
 							</div>
 							<div className="col-md-12 PageProfile-white-box">
-								<h3>Social media and website</h3>
-								<br/>
+								<div className={"row"}>
+									<div className="col-md-12">
+										<h3>Social media and website</h3>
+										<br/>
 
-								{this.getVcardValue("socialprofile")
-									? [].concat(this.getVcardValue("socialprofile")).map((s, i) => (
-										<div
-											className="row row-spaced"
-											key={i}>
-											<div className="col-md-6">
-												<FormLine
-													label={"Platform"}
-													type={"select"}
-													options={[
-														{ label: "Personal website", value: "Personal website" },
-														{ label: "LinkedIn", value: "LinkedIn" },
-														{ label: "Twitter", value: "Twitter" },
-														{ label: "Instragram", value: "Instragram" },
-														{ label: "Medium", value: "Medium" },
-														{ label: "GitHub", value: "GitHub" },
-														{ label: "BitBucket", value: "BitBucket" },
-														{ label: "Other", value: "Other" },
-													]}
-													value={s.type}
-													onChange={(v) => this.updateSocialeProfilePlatform(i, v)}
-													fullWidth={true}
-												/>
-											</div>
-											<div className="col-md-6">
-												<FormLine
-													label={"Link"}
-													value={s.valueOf() ? s.valueOf() : ""}
-													onChange={(v) => this.updateSocialeProfileLink(i, v)}
-													fullWidth={true}
-												/>
-											</div>
-											<div className="col-md-12">
-												<div className="right-buttons">
-													<button
-														className={"red-background"}
-														onClick={() => this.deleteSocialeProfile(i)}>
-														<i className="fas fa-trash-alt"/>
-													</button>
+										{this.getVcardValue("socialprofile")
+											? [].concat(this.getVcardValue("socialprofile")).map((s, i) => (
+												<div
+													className="row row-spaced"
+													key={i}>
+													<div className="col-md-6">
+														<FormLine
+															label={"Plateform"}
+															type={"select"}
+															options={[
+																{ label: "Personal website", value: "Personal website" },
+																{ label: "LinkedIn", value: "LinkedIn" },
+																{ label: "Twitter", value: "Twitter" },
+																{ label: "Instragram", value: "Instragram" },
+																{ label: "Medium", value: "Medium" },
+																{ label: "GitHub", value: "GitHub" },
+																{ label: "BitBucket", value: "BitBucket" },
+																{ label: "Other", value: "Other" },
+															]}
+															value={s.type}
+															onChange={(v) => this.updateSocialeProfilePlatform(i, v)}
+															fullWidth={true}
+														/>
+													</div>
+													<div className="col-md-6">
+														<FormLine
+															label={"Link"}
+															value={s.valueOf() ? s.valueOf() : ""}
+															onChange={(v) => this.updateSocialeProfileLink(i, v)}
+															fullWidth={true}
+														/>
+													</div>
+													<div className="col-md-12">
+														<div className="right-buttons">
+															<button
+																className={"red-background"}
+																onClick={() => this.deleteSocialeProfile(i)}>
+																<i className="fas fa-trash-alt"/>
+															</button>
+														</div>
+													</div>
 												</div>
-											</div>
-										</div>
-									))
-									: <Message
-										text={"No social media provided"}
-										height={100}
-									/>
-								}
+											))
+											: <Message
+												text={"No social media provided"}
+												height={100}
+											/>
+										}
+									</div>
 
-								<div className="right-buttons">
-									<button
-										onClick={() => this.addCurrentVcardSocialeProfile()}>
-										<i className="fas fa-plus"/> Add
-									</button>
+									<div className="col-md-12">
+										<div className="right-buttons">
+											<button
+												onClick={() => this.addCurrentVcardSocialeProfile()}>
+												<i className="fas fa-plus"/> Add
+											</button>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>

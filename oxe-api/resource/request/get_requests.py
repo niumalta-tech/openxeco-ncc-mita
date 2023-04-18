@@ -27,22 +27,39 @@ class GetRequests(MethodResource, Resource):
         'per_page': fields.Int(required=False, missing=50, validate=validate.Range(min=1, max=50)),
         'order': fields.Str(required=False, missing='desc', validate=lambda x: x in ['desc', 'asc']),
         'status': fields.DelimitedList(fields.Str(), required=False),
+        'types': fields.DelimitedList(fields.Str(), required=False),
+        'date_from': fields.DateTime(format="%Y-%m-%d", required=False),
+        'date_to': fields.DateTime(format="%Y-%m-%d", required=False),
     }, location="query")
     @jwt_required
     @verify_admin_access
     @catch_exception
     def get(self, **kwargs):
-
+        # base query
         query = self.db.session.query(self.db.tables["UserRequest"])
-
+        
+        # status filter
         if "status" in kwargs:
             query = query.filter(self.db.tables["UserRequest"].status.in_(kwargs["status"]))
+        
+        # type filter
+        if "types" in kwargs:
+            query = query.filter(self.db.tables["UserRequest"].type.in_(kwargs["types"]))
+            
+        # date filter
+        if "date_from" in kwargs:
+            query = query.filter(self.db.tables["UserRequest"].submission_date >= kwargs["date_from"])
 
+        if "date_to" in kwargs:
+            query = query.filter(self.db.tables["UserRequest"].submission_date <= kwargs["date_to"])
+
+        # order filter
         if "order" in kwargs and kwargs["order"] == "desc":
             query = query.order_by(self.db.tables["UserRequest"].submission_date.desc())
         else:
             query = query.order_by(self.db.tables["UserRequest"].submission_date.asc())
-
+            
+        # pagination
         pagination = query.paginate(kwargs['page'], kwargs['per_page'])
         data = Serializer.serialize(pagination.items, self.db.tables["UserRequest"])
 
