@@ -26,24 +26,28 @@ class GetUserProfile(MethodResource, Resource):
     @verify_admin_access
     @catch_exception
     def get(self, user_id):
-        user = self.db.get(self.db.tables["User"], {"id": user_id})
-        profile = self.db.get(self.db.tables["UserProfile"], {"user_id": user_id})
 
+        query = (
+            self.db.session.query(self.db.tables["UserProfile"])
+            .join(self.db.tables["User"], self.db.tables["User"].id == self.db.tables["UserProfile"].user_id)
+            .filter(
+                self.db.tables["UserProfile"].user_id == user_id,
+            )
+        )
 
-        if len(user) == 0:
-            return "", "401 The user has not been found"
+        try:
+            user, profile = query.with_entities(
+                self.db.tables["User"],
+                self.db.tables["UserProfile"],
+            ).first()
+        except TypeError as e:
+            return "", "404 User has not completed their profile"
 
-        user = user[0].__dict__
+        profile = profile.__dict__
+        del profile["_sa_instance_state"]
 
-
-        if len(profile) > 0:
-            profile = profile[0].__dict__
-            del profile['_sa_instance_state']
-        else:
-            profile = {}
-
-        profile["first_name"] = user["first_name"]
-        profile["last_name"] = user["last_name"]
-        profile["telephone"] = user["telephone"]
+        profile["first_name"] = user.first_name
+        profile["last_name"] = user.last_name
+        profile["telephone"] = user.telephone
 
         return profile, "200 "

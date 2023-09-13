@@ -18,7 +18,25 @@ export default class UserGlobal extends React.Component {
 
 		this.state = {
 			user: null,
-			userProfile: null,
+			userProfile: {
+				first_name: "",
+				last_name: "",
+				telephone: "",
+				domains_of_interest: null,
+				experience: null,
+				expertise_id: null,
+				gender: null,
+				how_heard: null,
+				industry_id: null,
+				mobile: "",
+				nationality_id: null,
+				profession_id: null,
+				residency: null,
+				sector: null,
+				public: false,
+				user_id: null,
+			},
+			fetchingProfile: true,
 		};
 	}
 
@@ -47,6 +65,9 @@ export default class UserGlobal extends React.Component {
 	}
 
 	refresh() {
+		this.setState({
+			fetchingProfile: true,
+		});
 		getRequest.call(this, "user/get_user/" + this.props.id, (data) => {
 			this.setState({
 				user: data,
@@ -60,9 +81,13 @@ export default class UserGlobal extends React.Component {
 		getRequest.call(this, "user/get_user_profile/" + this.props.id, (data) => {
 			this.setState({
 				userProfile: data,
+				fetchingProfile: false,
 			});
 		}, (response) => {
-			console.log(response.statusText);
+			this.setState({
+				fetchingProfile: false,
+			});
+			nm.warning(response.statusText);
 		}, (error) => {
 			nm.error(error.message);
 		});
@@ -124,7 +149,6 @@ export default class UserGlobal extends React.Component {
 			|| this.state.userProfile.experience === null
 			|| this.state.userProfile.expertise_id === null
 			|| this.state.userProfile.gender === null
-			|| this.state.userProfile.how_heard === null
 			|| this.state.userProfile.nationality_id === null
 			|| this.state.userProfile.profession_id === null
 			|| this.state.userProfile.residency === null
@@ -231,7 +255,7 @@ export default class UserGlobal extends React.Component {
 							disabled={true}
 						/>
 						<h2>User Profile</h2>
-						{this.state.userProfile != null
+						{this.state.fetchingProfile === false
 							&& <UpdateProfile
 								userProfile={this.state.userProfile}
 								setProfileValues={this.setProfileValues} />

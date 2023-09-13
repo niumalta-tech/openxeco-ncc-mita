@@ -40,9 +40,15 @@ export default class UpdateProfile extends React.Component {
 	}
 
 	componentDidMount() {
+		let selectedDomains = [];
+
+		if (this.props.userProfile.domains_of_interest !== null) {
+			selectedDomains = this.props.userProfile.domains_of_interest.split(" | ");
+		}
+
 		this.setState({
 			profile: this.props.userProfile,
-			selected_domains: this.props.userProfile.domains_of_interest.split(" | "),
+			selected_domains: selectedDomains,
 		});
 
 		getRequest.call(this, "public/get_public_countries", (data) => {

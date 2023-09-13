@@ -32,7 +32,7 @@ class UpdateProfile(MethodResource, Resource):
     @catch_exception
     def post(self, **kwargs):
         user_id = kwargs["user_id"]
-        db_profile = self.db.get(self.db.tables["UserProfile"], {"user_id": user_id})
+        # db_profile = self.db.get(self.db.tables["UserProfile"], {"user_id": user_id})
 
         self.db.merge({
             'id': user_id,
@@ -43,8 +43,7 @@ class UpdateProfile(MethodResource, Resource):
             'status': "ACCEPTED",
         }, self.db.tables["User"])
 
-        self.db.merge({
-            'id': db_profile[0].id,
+        profile_data = {
             'user_id': user_id,
             'gender': kwargs["data"]['gender'],
             'sector': kwargs["data"]['sector'],
@@ -58,6 +57,13 @@ class UpdateProfile(MethodResource, Resource):
             'nationality_id': kwargs["data"]['nationality_id'],
             'expertise_id': kwargs["data"]['expertise_id'],
             'public': kwargs["data"]['public'],
-        }, self.db.tables["UserProfile"])
+        }
+
+        db_profile = self.db.get(self.db.tables["UserProfile"], {"user_id": user_id})
+
+        if len(db_profile) > 0:
+            profile_data['id'] = db_profile[0].id
+
+        self.db.merge(profile_data, self.db.tables["UserProfile"])
 
         return "", "200 "
