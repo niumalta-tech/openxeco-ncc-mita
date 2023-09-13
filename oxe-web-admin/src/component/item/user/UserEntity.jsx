@@ -3,6 +3,7 @@ import "./UserEntity.css";
 import Popup from "reactjs-popup";
 import { NotificationManager as nm } from "react-notifications";
 import Loading from "../../box/Loading.jsx";
+import { validateEmail, validateTelephoneNumber } from "../../../utils/re.jsx";
 import { getRequest, postRequest } from "../../../utils/request.jsx";
 import FormLine from "../../button/FormLine.jsx";
 import DialogConfirmation from "../../dialog/DialogConfirmation.jsx";
@@ -17,6 +18,9 @@ export default class UserEntity extends React.Component {
 		this.deleteUserEntity = this.deleteUserEntity.bind(this);
 
 		this.state = {
+			email: "",
+			telephone: "",
+			level: "",
 			userEntities: null,
 			selectedEntity: null,
 			selectedDepartment: null,
@@ -69,6 +73,9 @@ export default class UserEntity extends React.Component {
 			user_id: this.props.id,
 			entity_id: this.state.selectedEntity,
 			department: this.state.selectedDepartment,
+			work_email: this.state.email,
+			seniority_level: this.state.level,
+			work_telephone: this.state.telephone,
 		};
 
 		postRequest.call(this, "user/add_user_entity", params, () => {
@@ -86,13 +93,13 @@ export default class UserEntity extends React.Component {
 
 	deleteUserEntity(id) {
 		const params = {
-			user: this.props.id,
-			entity: id,
+			user_id: this.props.id,
+			entity_id: id,
 		};
 
-		postRequest.call(this, "user/delete_user_entity", params, () => {
+		postRequest.call(this, "user/disassociate_user_entity", params, () => {
 			this.refresh();
-			nm.info("The row has been deleted");
+			nm.info("The user has been disassociated from the entity");
 		}, (response) => {
 			this.refresh();
 			nm.warning(response.statusText);
@@ -121,6 +128,21 @@ export default class UserEntity extends React.Component {
 		});
 	}
 
+	formValid() {
+		if (!validateEmail(this.state.email)
+			|| (
+				this.state.telephone !== ""
+				&& !validateTelephoneNumber(this.state.telephone)
+			)
+			|| this.state.level === ""
+			|| this.state.department === ""
+			|| this.state.selectedEntity === null
+		) {
+			return false;
+		}
+		return true;
+	}
+
 	getEntityFromId(entityId) {
 		if (this.state.allEntities) {
 			const filteredEntities = this.state.allEntities.filter((c) => c.id === entityId);
@@ -144,7 +166,7 @@ export default class UserEntity extends React.Component {
 				<div className="col-md-12">
 					<div className={"top-right-buttons"}>
 						<Popup
-							className="Popup-small-size"
+							className="Popup-full-size"
 							trigger={
 								<button
 									className={"blue-background"}>
@@ -156,7 +178,7 @@ export default class UserEntity extends React.Component {
 						>
 							{(close) => <div className="row row-spaced">
 								<div className="col-md-12">
-									<h2>Add an assignment to an entity</h2>
+									<h2>Associate user with entity</h2>
 
 									<div className={"top-right-buttons"}>
 										<button
@@ -183,21 +205,69 @@ export default class UserEntity extends React.Component {
 												onChange={(v) => this.setState({ selectedEntity: v })}
 											/>
 											<FormLine
+												label="Work Email *"
+												value={this.state.email}
+												onChange={(v) => this.changeState("email", v)}
+												autofocus={true}
+												onKeyDown={this.onKeyDown}
+											/>
+											{!validateEmail(this.state.email) && this.state.email !== ""
+												&& <div className="row">
+													<div className="col-md-6"></div>
+													<div className="col-md-6">
+														<div className="validation-error">
+															Please enter a valid email address
+														</div>
+													</div>
+												</div>
+											}
+											<FormLine
+												label="Work Telephone Number"
+												value={this.state.telephone}
+												onChange={(v) => this.changeState("telephone", v)}
+												autofocus={true}
+												onKeyDown={this.onKeyDown}
+											/>
+											{ !validateTelephoneNumber(this.state.telephone) && this.state.telephone !== ""
+												&& <div className="row">
+													<div className="col-md-6"></div>
+													<div className="col-md-6">
+														<div className="validation-error">
+															Accepted Format: +1234567891, 1234567891
+														</div>
+													</div>
+												</div>
+											}
+											<FormLine
+												label={"Seniority Level *"}
+												type={"select"}
+												options={[
+													{ value: "Board Member", label: "Board Member" },
+													{ value: "Executive Management", label: "Executive Management" },
+													{ value: "Senior Management", label: "Senior Management" },
+													{ value: "Management", label: "Management" },
+													{ value: "Senior", label: "Senior" },
+													{ value: "Intermediate", label: "Intermediate" },
+													{ value: "Entry-Level", label: "Entry-Level" },
+												]}
+												value={this.props.level}
+												onChange={(v) => this.setState({ level: v })}
+											/>
+											<FormLine
 												label={"Department"}
 												type={"select"}
 												value={this.state.selectedDepartment}
 												options={this.state.departments === null
 													? []
 													: [{ value: null, label: "-" }].concat(
-														this.state.departments
-															.department.map((o) => ({ label: o.name, value: o.name })),
+														this.state.departments.map((o) => ({ label: o.name, value: o.name })),
 													)}
 												onChange={(v) => this.setState({ selectedDepartment: v })}
 											/>
 											<div className="right-buttons">
 												<button
 													onClick={() => this.addUserEntity(close)}
-													disabled={this.state.selectedEntity === null}>
+													disabled={this.formValid() === false}>
 													Add the assignment
 												</button>
 											</div>
@@ -211,7 +281,7 @@ export default class UserEntity extends React.Component {
 						</Popup>
 					</div>
 
-					<h2>Assigned entities</h2>
+					<h2>Associated entities</h2>
 				</div>
 
 				<div className="col-md-12">
@@ -242,7 +312,7 @@ export default class UserEntity extends React.Component {
 									trigger={
 										<button
 											className={"red-background Table-right-button"}>
-											<i className="fas fa-trash-alt"/> Remove the assignment
+											<i className="fas fa-trash-alt"/> Disassociate
 										</button>
 									}
 									afterConfirmation={() => this.deleteUserEntity(c.entity_id)}

@@ -25,9 +25,21 @@ class GetContactEnums(MethodResource, Resource):
     @catch_exception
     def get(self):
 
+        departments = self.db.get(self.db.tables['Department'])
+        users = self.db.get(self.db.tables["User"], {"status": "ACCEPTED"})
+
         data = {
             "type": self.db.tables["EntityContact"].type.prop.columns[0].type.enums,
             "representative": self.db.tables["EntityContact"].representative.prop.columns[0].type.enums,
+            "department": [department.name for department in departments],
+            "user": [
+                {
+                    "id": user.id,
+                    "full_name": f"{user.first_name} {user.last_name}",
+                    "email": user.email,
+                }
+                for user in users
+            ]
         }
 
         return data, "200 "

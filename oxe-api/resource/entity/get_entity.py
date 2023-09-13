@@ -35,4 +35,14 @@ class GetEntity(MethodResource, Resource):
 
         data = Serializer.serialize(data, self.db.tables["Entity"])
 
-        return data[0], "200 "
+        res = data[0]
+
+        # approved_signatory pdf
+        queryDocument = self.db.session.query(self.db.tables["Document"])
+        queryDocuments = queryDocument.filter(self.db.tables["Document"].filename.like(f"%{res['vat_number']}%")).all()
+
+        if len(queryDocuments) > 0:
+            approved_signatory = Serializer.serialize(queryDocuments[0], self.db.tables["Document"])
+            res['approved_signatory'] = approved_signatory
+
+        return res, "200 "

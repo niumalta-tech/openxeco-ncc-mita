@@ -25,14 +25,16 @@ class UpdateContact(MethodResource, Resource):
     @use_kwargs({
         'id': fields.Int(),
         'entity_id': fields.Int(),
-        'type': fields.Str(required=False),
+        'user_id': fields.Int(),
+        'type': fields.Str(),
         'representative': fields.Str(required=False, allow_none=True),
         'name': fields.Str(required=False, allow_none=True),
         'value': fields.Str(required=False, allow_none=True),
-        'department': fields.Str(required=True, allow_none=False),
-        'seniority_level': fields.Str(required=True, allow_none=False),
-        'work_email': fields.Str(required=True, allow_none=False),
-        'work_telephone': fields.Str(required=True, allow_none=False),
+
+        # 'department': fields.Str(required=False, allow_none=True),
+        # 'seniority_level': fields.Str(required=False, allow_none=True),
+        # 'work_email': fields.Str(required=False, allow_none=True),
+        # 'work_telephone': fields.Str(required=False, allow_none=True),
     })
     @jwt_required
     @verify_admin_access

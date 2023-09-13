@@ -76,6 +76,12 @@ export default class Entity extends Item {
 		});
 	}
 
+	refresh() {
+		this.fetchEntity();
+		this.fetchEntityAddress();
+		this.fetchEntityContacts();
+	}
+
 	fetchEntity() {
 		if (this.props.node && this.props.node.api_endpoint) {
 			const url = this.props.node.api_endpoint + "/public/get_public_entity/" + this.props.id;
@@ -96,6 +102,61 @@ export default class Entity extends Item {
 				});
 			}, (response) => {
 				nm.warning(response.statusText);
+			}, (error) => {
+				nm.error(error.message);
+			});
+		}
+	}
+
+	fetchEntityAddress() {
+		if (this.props.node && this.props.node.api_endpoint) {
+			const url = this.props.node.api_endpoint + "/public/get_public_entity_addresses/" + this.props.id;
+
+			getForeignRequest.call(this, url, (data) => {
+				this.setState({
+					entityAddress: data[0],
+				});
+			}, (response) => {
+				nm.warning(response.statusText);
+			}, (error) => {
+				nm.error(error.message);
+			});
+		} else {
+			getRequest.call(this, "entity/get_entity_addresses/" + this.props.id, (data) => {
+				this.setState({
+					entityAddress: data[0],
+				});
+			}, (response) => {
+				nm.warning(response.statusText);
+			}, (error) => {
+				nm.error(error.message);
+			});
+		}
+	}
+
+	fetchEntityContacts() {
+		if (this.props.node && this.props.node.api_endpoint) {
+			const url = this.props.node.api_endpoint + "/public/get_entity_contacts/" + this.props.id;
+
+			getForeignRequest.call(this, url, (data) => {
+				this.setState({
+					entityContacts: data,
+				});
+			}, (response) => {
+				nm.warning(response.statusText);
+			}, (error) => {
+				nm.error(error.message);
+			});
+		} else {
+			getRequest.call(this, "entity/get_entity_contacts/" + this.props.id, (data) => {
+				this.setState({
+					entityContacts: data,
+				});
+			}, () => {
+				// nm.warning(response.statusText);
+				this.setState({
+					entityContacts: null,
+				});
 			}, (error) => {
 				nm.error(error.message);
 			});
@@ -153,7 +214,11 @@ export default class Entity extends Item {
 				}
 				modal
 				closeOnDocumentClick={false}
-				onOpen={() => this.fetchEntity()}
+				onOpen={() => {
+					this.fetchEntity();
+					this.fetchEntityAddress();
+					this.fetchEntityContacts();
+				}}
 			>
 				{(close) => <div className="row row-spaced">
 					<div className="col-md-9">
@@ -279,6 +344,8 @@ export default class Entity extends Item {
 									key={this.props.id}
 									id={this.props.id}
 									entity={this.state.entity}
+									entityAddress={this.state.entityAddress}
+									entityContacts={this.state.entityContacts}
 									node={this.props.node}
 									editable={!this.props.node}
 									refresh={() => this.fetchEntity()}
@@ -289,7 +356,7 @@ export default class Entity extends Item {
 									entity={this.state.entity}
 									node={this.props.node}
 									editable={!this.props.node}
-									refresh={() => this.fetchEntity()}
+									refresh={() => this.refresh()}
 								/>,
 								<EntityAddress
 									key={this.props.id}

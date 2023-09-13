@@ -25,8 +25,40 @@ class GetEntityContacts(MethodResource, Resource):
     @verify_admin_access
     @catch_exception
     def get(self, id_):
+        entity_id = int(id_)
 
-        data = self.db.get(self.db.tables["EntityContact"], {"entity_id": id_})
-        data = Serializer.serialize(data, self.db.tables["EntityContact"])
+        query = (
+            self.db.session.query(self.db.tables["EntityContact"])
+            .join(self.db.tables["User"], self.db.tables["User"].id == self.db.tables["EntityContact"].user_id)
+            .join(self.db.tables["UserEntityAssignment"], self.db.tables["UserEntityAssignment"].user_id == self.db.tables["EntityContact"].user_id)
+            .filter(
+                self.db.tables["EntityContact"].entity_id == entity_id,
+                self.db.tables["UserEntityAssignment"].entity_id == entity_id,
+            )
+        )
 
-        return data, "200 "
+        try:
+            user, contact, assignment = query.with_entities(
+                self.db.tables["User"],
+                self.db.tables["EntityContact"],
+                self.db.tables["UserEntityAssignment"],
+            ).first()
+        except TypeError as err:
+            return "", "404 No Entity Contact"
+
+        contact = {
+            "id": contact.id,
+            "user_id": user.id,
+            "entity_id": contact.entity_id,
+            "type": contact.type,
+            "representative": contact.representative,
+            "name": f"{user.first_name} {user.last_name}",
+            "value": contact.value,
+            "work_email": assignment.work_email,
+            "work_telephone": assignment.work_telephone,
+            "seniority_level": assignment.seniority_level,
+            "department": assignment.department,
+            "acknowledged": "Yes",
+        }
+
+        return contact, "200 "

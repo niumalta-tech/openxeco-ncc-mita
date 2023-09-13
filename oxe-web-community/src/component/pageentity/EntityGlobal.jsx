@@ -60,9 +60,11 @@ export default class EntityGlobal extends React.Component {
 		});
 
 		getRequest.call(this, "private/get_my_entity_contacts/" + this.props.entity.id, (data) => {
-			this.setState({
-				contact: data,
-			});
+			if (Object.keys(data).length > 0) {
+				this.setState({
+					contact: data,
+				});
+			}
 		}, (response) => {
 			nm.warning(response.statusText);
 		}, (error) => {
@@ -303,7 +305,7 @@ export default class EntityGlobal extends React.Component {
 								<h2>Contact</h2>
 							</div>
 							<div className="col-md-12">
-								No contact set
+								This entity has no primary contact information
 							</div>
 						</>
 					}

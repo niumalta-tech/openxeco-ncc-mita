@@ -26,7 +26,7 @@ export function validateArticleTitle(value) {
 
 export function validateTelephoneNumber(number) {
 	if (number === null || typeof number === "undefined" || number.length === 0) return false;
-	const re = /^(\+)?([0-9]){10,16}$/;
+	const re = /^(\+)?([0-9]\s*){8,16}$/;
 	return re.test(String(number)) || !number;
 }
 
@@ -64,4 +64,10 @@ export function validateOtp(otp) {
 	if (otp === null || typeof otp === "undefined" || otp.length === 0) return false;
 	const re = /^[0-9]{6}$/;
 	return re.test(String(otp).toUpperCase()) || !otp;
+}
+
+export function validateName(name) {
+	if (name === null || typeof name === "undefined" || name.length === 0) return false;
+	const re = /^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z]*)*$/;
+	return re.test(String(name)) || !name;
 }

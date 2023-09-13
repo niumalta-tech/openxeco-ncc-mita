@@ -25,32 +25,37 @@ class GetMyEntityContacts(MethodResource, Resource):
     @catch_exception
     def get(self, id_):
 
-        try:
-            self.db.session \
-                .query(self.db.tables["UserEntityAssignment"]) \
-                .with_entities(self.db.tables["UserEntityAssignment"].entity_id) \
-                .filter(self.db.tables["UserEntityAssignment"].user_id == int(get_jwt_identity())) \
-                .filter(self.db.tables["UserEntityAssignment"].entity_id == int(id_)) \
-                .one()
-        except NoResultFound:
-            return "", "422 Object not found or you don't have the required access to it"
+        entity_id = int(id_)
 
-        contact = self.db.get(self.db.tables["EntityContact"], {"entity_id": int(id_)})[0]
-        user = self.db.get(self.db.tables["UserEntityAssignment"], {
-            "user_id": contact.user_id,
-            "entity_id": int(id_),
-        })[0]
+        query = (
+            self.db.session.query(self.db.tables["EntityContact"])
+            .join(self.db.tables["User"], self.db.tables["User"].id == self.db.tables["EntityContact"].user_id)
+            .join(self.db.tables["UserEntityAssignment"], self.db.tables["UserEntityAssignment"].user_id == self.db.tables["EntityContact"].user_id)
+            .filter(
+                self.db.tables["EntityContact"].entity_id == entity_id,
+                self.db.tables["UserEntityAssignment"].entity_id == entity_id,
+            )
+        )
+
+        try:
+            user, contact, assignment = query.with_entities(
+                self.db.tables["User"],
+                self.db.tables["EntityContact"],
+                self.db.tables["UserEntityAssignment"],
+            ).first()
+        except TypeError as err:
+            return "", "404 No Entity Contact"
 
         is_primary = int(get_jwt_identity()) == contact.user_id
 
-        data = {
-            "name": contact.name,
-            "work_email": user.work_email,
-            "work_telephone": user.work_telephone,
-            "seniority_level": user.seniority_level if is_primary else "",
-            "department": user.department if is_primary else "",
-            "acknowledged": "Yes" if is_primary else "",
-            "primary": int(get_jwt_identity()) == contact.user_id,
+        contact = {
+            "name": f"{user.first_name} {user.last_name}",
+            "work_email": assignment.work_email,
+            "work_telephone": assignment.work_telephone,
+            "seniority_level": assignment.seniority_level,
+            "department": assignment.department,
+            "acknowledged": "Yes",
+            "primary": is_primary,
         }
 
-        return data, "200 "
+        return contact, "200 "

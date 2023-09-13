@@ -15,7 +15,7 @@ from decorator.catch_exception import catch_exception
 from decorator.log_request import log_request
 from decorator.verify_admin_access import verify_admin_access
 from utils.serializer import Serializer
-
+from sqlalchemy import or_
 
 class ExtractEntities(MethodResource, Resource):
 
@@ -39,6 +39,7 @@ class ExtractEntities(MethodResource, Resource):
         'include_phone': fields.Bool(required=False),
         'include_workforce': fields.Bool(required=False),
         'include_taxonomy': fields.Bool(required=False),
+        'include_authorisation_by_approved_signatory': fields.Bool(required=False),
         'ecosystem_role': fields.DelimitedList(fields.Str(), required=False),
         'entity_type': fields.DelimitedList(fields.Str(), required=False),
         'startup_only': fields.Bool(required=False),
@@ -159,6 +160,46 @@ class ExtractEntities(MethodResource, Resource):
         if 'include_taxonomy' in kwargs and kwargs['include_taxonomy'] is True:
             df = self.include_taxonomy(entity_ids, df)
 
+        # Manage Authorisation by Approved Signatory
+        if 'include_authorisation_by_approved_signatory' in kwargs and kwargs['include_authorisation_by_approved_signatory'] is True:
+            vat_numbers = [c["vat_number"] for c in entities] \
+                if len(entities) <= self.db.get_count(self.db.tables["Entity"]) else None
+
+            if vat_numbers is not None:
+                documents = self.db.session.query(self.db.tables["Document"])
+
+                vat_filters = []
+                for vat_number in vat_numbers:
+                    vat_filters.append(self.db.tables["Document"].filename.like(f"%{vat_number}%"))
+
+                # * Spread Operator in Python
+                documents = documents.filter(or_(*vat_filters)).all()
+
+                documents = Serializer.serialize(documents, self.db.tables["Document"])
+
+                # documents = pd.DataFrame(documents)
+                # documents = documents.add_prefix('Signatory Approval|filename|')
+
+                if len(documents) > 0:
+                    # @TODO: Improve this:
+                    # Find away to merge using SQL "like" operator:
+                    #  - self.db.tables["Document"].filename.like(f"%{vat_number}%")
+                    #
+                    # df = df.merge(documents, left_on='Global|vat_number', right_on='Document|filename', how='left')
+                    # df = df.drop(['Document|X', 'Document|Y', '...'], axis=1)
+
+                    # @TODO Bad complexity, need improvement.
+                    df['Signatory Approval|filename'] = pd.Series(dtype='object')
+                    for i, vat in df['Global|vat_number'].items():
+                        if vat is None or len(vat) < 1:
+                            continue
+                        for doc in documents:
+                            filename = doc['filename']
+                            # if vat_number in filename: "entity_registration_approval_{user_id}_{vat_number}.pdf"
+                            if vat in filename:
+                                df.loc[i, 'Signatory Approval|filename'] = filename
+                                break
+
         # Prepare final export
 
         if 'format' not in kwargs or kwargs['format'] != "json":
@@ -213,9 +254,56 @@ class ExtractEntities(MethodResource, Resource):
     def prepare_xlsx(self, df):
         # Clean DF
 
-        df = df.drop('Global|id', axis=1)
-        df = df.rename({'Global|trade_register_number': "trade_register_number"}, axis=1)
-        df = df.set_index("trade_register_number")
+
+        df = df.rename({'Global|id': "Entity_ID"}, axis=1,errors='ignore')
+        df = df.set_index("Entity_ID")
+        df = df.rename({'Global|image': "Global|image_id"}, axis=1, errors='ignore')
+        df = df.drop('Global|description', axis=1, errors='ignore')
+        df = df.drop('Global|creation_date', axis=1, errors='ignore')
+        df = df.drop('Global|is_startup', axis=1, errors='ignore')
+        df = df.drop('Global|is_cybersecurity_core_business', axis=1, errors='ignore')
+        df = df.drop('Global|linkedin_url', axis=1, errors='ignore')
+        df = df.drop('Global|twitter_url', axis=1, errors='ignore')
+        df = df.drop('Global|youtube_url', axis=1, errors='ignore')
+        df = df.drop('Global|discord_url', axis=1, errors='ignore')
+        df = df.drop('Global|sync_id', axis=1, errors='ignore')
+        df = df.drop('Global|sync_node', axis=1, errors='ignore')
+        df = df.drop('Global|sync_global', axis=1, errors='ignore')
+        df = df.drop('Global|sync_address', axis=1, errors='ignore')
+        df = df.drop('Global|sync_status', axis=1, errors='ignore')
+        df = df.drop('Global|legal_status', axis=1, errors='ignore')
+        df = df.drop('Global|headline', axis=1, errors='ignore')
+
+        df = df.drop('Address|number', axis=1, errors='ignore')
+        df = df.drop('Address|administrative_area', axis=1, errors='ignore')
+        df = df.drop('Address|latitude', axis=1, errors='ignore')
+        df = df.drop('Address|longitude', axis=1, errors='ignore')
+
+        df = df.drop('User|department', axis=1, errors='ignore')
+        df = df.drop('User|seniority_level', axis=1, errors='ignore')
+        df = df.drop('User|email', axis=1, errors='ignore')
+
+        df = df.drop('Email|representative', axis=1, errors='ignore')
+        df = df.drop('Email|name', axis=1, errors='ignore')
+        df = df.drop('Email|value', axis=1, errors='ignore')
+        df = df.drop('Email|department', axis=1, errors='ignore')
+        df = df.drop('Email|user_id', axis=1, errors='ignore')
+
+
+        df = df.drop('Phone|representative', axis=1, errors='ignore')
+        df = df.drop('Phone|name', axis=1, errors='ignore')
+        df = df.drop('Phone|value', axis=1, errors='ignore')
+        df = df.drop('Phone|department', axis=1, errors='ignore')
+        df = df.drop('Phone|user_id', axis=1, errors='ignore')
+
+
+        df = df.drop('Workforce|workforce', axis=1, errors='ignore')
+        df = df.drop('Workforce|date', axis=1, errors='ignore')
+        df = df.drop('Workforce|is_estimated', axis=1, errors='ignore')
+        df = df.drop('Workforce|source', axis=1, errors='ignore')
+
+
+        df = df.drop({'Global|trade_register_number'}, axis=1)
         df.columns = df.columns.str.split('|', expand=True)
 
         # Build the XLS file

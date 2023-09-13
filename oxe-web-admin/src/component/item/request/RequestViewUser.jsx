@@ -84,6 +84,7 @@ export default class RequestViewUser extends Component {
 			>
 				{(close) => <div className="row">
 					<div className="col-md-12">
+						<h2>View User</h2>
 						<div className={"top-right-buttons"}>
 							<button
 								className={"grey-background"}
@@ -96,90 +97,90 @@ export default class RequestViewUser extends Component {
 						<h1 className="User-title">
 							{this.props.user_profile.email}
 						</h1>
+					</div>
 
-						<div className="col-md-12">
-							<FormLine
-								label={"Email"}
-								value={this.props.user_profile.email || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Name"}
-								value={this.props.user_profile.first_name || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Surname"}
-								value={this.props.user_profile.last_name || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Gender"}
-								value={this.props.user_profile.gender || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Telephone"}
-								value={this.props.user_profile.telephone || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Mobile"}
-								value={this.props.user_profile.mobile || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Role/Profession"}
-								value={this.state.profession}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Sector"}
-								value={this.props.user_profile.sector || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Industry"}
-								value={this.state.industry}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Nationality"}
-								value={this.state.country}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Residency"}
-								value={this.props.user_profile.residency || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Experience"}
-								value={this.props.user_profile.experience || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Primary Area of Expertise"}
-								value={this.state.expertise}
-								disabled={true}
-							/>
-							<FormLine
-								label={"How did you hear about us?"}
-								value={this.props.user_profile.how_heard || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Domains of Interest"}
-								value={this.props.user_profile.domains_of_interest || ""}
-								disabled={true}
-							/>
-							<FormLine
-								label={"Profile Public?"}
-								type={"checkbox"}
-								value={this.props.user_profile.public}
-								disabled={true}
-							/>
-						</div>
+					<div className="col-md-12">
+						<FormLine
+							label={"Email"}
+							value={this.props.user_profile.email || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Name"}
+							value={this.props.user_profile.first_name || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Surname"}
+							value={this.props.user_profile.last_name || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Gender"}
+							value={this.props.user_profile.gender || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Telephone"}
+							value={this.props.user_profile.telephone || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Mobile"}
+							value={this.props.user_profile.mobile || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Role/Profession"}
+							value={this.state.profession}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Sector"}
+							value={this.props.user_profile.sector || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Industry"}
+							value={this.state.industry}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Nationality"}
+							value={this.state.country}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Residency"}
+							value={this.props.user_profile.residency || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Experience"}
+							value={this.props.user_profile.experience || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Primary Area of Expertise"}
+							value={this.state.expertise}
+							disabled={true}
+						/>
+						<FormLine
+							label={"How did you hear about us?"}
+							value={this.props.user_profile.how_heard || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Domains of Interest"}
+							value={this.props.user_profile.domains_of_interest || ""}
+							disabled={true}
+						/>
+						<FormLine
+							label={"Profile Public?"}
+							type={"checkbox"}
+							value={this.props.user_profile.public}
+							disabled={true}
+						/>
 					</div>
 				</div>
 				}

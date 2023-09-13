@@ -5,6 +5,7 @@ import { getForeignRequest, postRequest, getRequest } from "../../../utils/reque
 import FormLine from "../../button/FormLine.jsx";
 import Loading from "../../box/Loading.jsx";
 import DialogAddImage from "../../dialog/DialogAddImage.jsx";
+import Message from "../../box/Message.jsx";
 
 export default class EntityGlobal extends React.Component {
 	constructor(props) {
@@ -46,7 +47,7 @@ export default class EntityGlobal extends React.Component {
 	}
 
 	saveEntityValue(prop, value) {
-		if (this.props.entity[prop] !== value) {
+		if (this.props?.entity[prop] !== value) {
 			const params = {
 				id: this.props.id,
 				[prop]: value,
@@ -66,7 +67,7 @@ export default class EntityGlobal extends React.Component {
 	}
 
 	render() {
-		if (!this.props.entity || !this.state.entityEnums) {
+		if (!this.props?.entity || !this.state.entityEnums) {
 			return <Loading height={300} />;
 		}
 
@@ -103,7 +104,7 @@ export default class EntityGlobal extends React.Component {
 					<FormLine
 						type={"image"}
 						label={""}
-						value={this.props.entity.image}
+						value={this.props?.entity?.image}
 						onChange={(v) => this.saveEntityValue("image", v)}
 						height={160}
 						disabled={!this.props.editable}
@@ -114,13 +115,13 @@ export default class EntityGlobal extends React.Component {
 				<div className="col-md-6">
 					<FormLine
 						label={"ID"}
-						value={this.props.entity.id}
+						value={this.props?.entity?.id}
 						disabled={true}
 					/>
 					<FormLine
 						label={"Status"}
 						type={"select"}
-						value={this.props.entity.status}
+						value={this.props?.entity?.status}
 						options={this.state.entityEnums === null
 							|| typeof this.state.entityEnums.status === "undefined" ? []
 							: this.state.entityEnums.status.map((o) => ({ label: o, value: o }))}
@@ -128,18 +129,8 @@ export default class EntityGlobal extends React.Component {
 						disabled={!this.props.editable}
 					/>
 					<FormLine
-						label={"Legal status"}
-						type={"select"}
-						value={this.props.entity.legal_status}
-						options={this.state.entityEnums === null
-							|| typeof this.state.entityEnums.legal_status === "undefined" ? []
-							: this.state.entityEnums.legal_status.map((o) => ({ label: o, value: o }))}
-						onChange={(v) => this.saveEntityValue("legal_status", v)}
-						disabled={!this.props.editable}
-					/>
-					<FormLine
 						label={"Name"}
-						value={this.props.entity.name}
+						value={this.props?.entity?.name}
 						onBlur={(v) => this.saveEntityValue("name", v)}
 						disabled={!this.props.editable}
 						fullWidth={true}
@@ -147,81 +138,138 @@ export default class EntityGlobal extends React.Component {
 				</div>
 
 				<div className="col-md-12">
-					<h3>Definition</h3>
+					<h3>Global information</h3>
 				</div>
 
-				<div className="col-md-12 row-spaced">
+				<div className={"col-md-12 row-spaced"}>
 					<FormLine
 						label={"Name"}
-						value={this.props.entity.name}
+						value={this.props?.entity?.name}
 						disabled={true}
 					/>
 					<FormLine
 						label={"Entity Type"}
-						value={this.props.entity.entity_type}
+						value={this.props?.entity?.entity_type || ""}
 						disabled={true}
 					/>
 					<FormLine
 						label={"VAT Number"}
-						value={this.props.entity.vat_number}
+						value={this.props?.entity?.vat_number || ""}
 						disabled={true}
 					/>
 					<FormLine
 						label={"Website"}
-						value={this.props.entity.website}
+						value={this.props?.entity?.website || ""}
+						disabled={true}
+					/>
+					<FormLine
+						label={"Company Email"}
+						value={this.props?.entity?.email || ""}
 						disabled={true}
 					/>
 					<FormLine
 						label={"Size"}
-						value={this.props.entity.size}
+						value={this.props?.entity?.size || ""}
 						disabled={true}
 					/>
 					<FormLine
 						label={"Sector"}
-						value={this.props.entity.sector}
+						value={this.props?.entity?.sector || ""}
 						disabled={true}
 					/>
 					<FormLine
 						label={"Industry"}
-						value={this.props.entity.industry}
+						value={this.props?.entity?.industry || ""}
 						disabled={true}
 					/>
 					<FormLine
 						label={"Primary involvement"}
-						value={this.props.entity.involvement}
+						value={this.props?.entity?.involvement || ""}
+						disabled={true}
+					/>
+					<FormLine
+						label="Authorisation by Approved Signatory"
+						value={this.props?.entity?.approved_signatory?.filename}
+						disabled={true}
+					/>
+				</div>
+				<div className="col-md-12">
+					<h3>Address</h3>
+				</div>
+				<div className={"col-md-12 row-spaced"}>
+					<FormLine
+						label={"Address Line 1"}
+						value={this.props?.entityAddress?.address_1}
+						disabled={true}
+					/>
+					<FormLine
+						label={"Address Line 2"}
+						value={this.props?.entityAddress?.address_2}
+						disabled={true}
+					/>
+					<FormLine
+						label={"Postal Code"}
+						value={this.props?.entityAddress?.postal_code}
+						disabled={true}
+					/>
+					<FormLine
+						label={"City"}
+						value={this.props?.entityAddress?.city}
+						disabled={true}
+					/>
+					<FormLine
+						label={"Country"}
+						value={this.props?.entityAddress?.country}
 						disabled={true}
 					/>
 				</div>
 
 				<div className="col-md-12">
-					<h3>Social network</h3>
+					<h3>Contact</h3>
 				</div>
+				<div className={"col-md-12 row-spaced"}>
+					{this.props.entityContacts !== undefined && this.props.entityContacts !== null
+						? <div>
+							<FormLine
+								label={"Contact Name"}
+								value={this.props?.entityContacts?.name}
+								disabled={true}
+							/>
 
-				<div className="col-md-12">
-					<FormLine
-						label={"Linkedin URL"}
-						value={this.props.entity.linkedin_url}
-						onBlur={(v) => this.saveEntityValue("linkedin_url", v)}
-						disabled={!this.props.editable}
-					/>
-					<FormLine
-						label={"Twitter URL"}
-						value={this.props.entity.twitter_url}
-						onBlur={(v) => this.saveEntityValue("twitter_url", v)}
-						disabled={!this.props.editable}
-					/>
-					<FormLine
-						label={"Youtube URL"}
-						value={this.props.entity.youtube_url}
-						onBlur={(v) => this.saveEntityValue("youtube_url", v)}
-						disabled={!this.props.editable}
-					/>
-					<FormLine
-						label={"Discord URL"}
-						value={this.props.entity.discord_url}
-						onBlur={(v) => this.saveEntityValue("discord_url", v)}
-						disabled={!this.props.editable}
-					/>
+							<FormLine
+								label={"Contact Email"}
+								value={this.props?.entityContacts?.work_email}
+								disabled={true}
+							/>
+
+							<FormLine
+								label={"Work Telephone Number"}
+								value={this.props?.entityContacts?.work_telephone}
+								disabled={true}
+							/>
+
+							<FormLine
+								label={"Department"}
+								value={this.props?.entityContacts?.department}
+								disabled={true}
+							/>
+
+							<FormLine
+								label={"Seniority Level"}
+								value={this.props?.entityContacts?.seniority_level}
+								disabled={true}
+							/>
+
+							<FormLine
+								label={"Acknowledged"}
+								value={this.props?.entityContacts?.acknowledged}
+								disabled={true}
+							/>
+						</div>
+						: <Message
+							text={"This entity has no contact"}
+							height={50} />
+					}
 				</div>
 			</div>
 		);

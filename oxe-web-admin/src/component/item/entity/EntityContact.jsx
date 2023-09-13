@@ -12,9 +12,10 @@ export default class EntityContact extends React.Component {
 		super(props);
 
 		this.state = {
-			addresses: null,
+			contacts: [],
 			entityName: props.name,
 			contactEnums: null,
+			users: [],
 		};
 	}
 
@@ -25,12 +26,19 @@ export default class EntityContact extends React.Component {
 	}
 
 	refresh() {
+		this.props.refresh();
+
 		getRequest.call(this, "entity/get_entity_contacts/" + this.props.id, (data) => {
+			if (Object.keys(data).length > 0) {
+				this.setState({
+					contacts: [data],
+				});
+			}
+		}, () => {
+			// nm.warning(response.statusText);
 			this.setState({
-				addresses: data,
+				contacts: [],
 			});
-		}, (response) => {
-			nm.warning(response.statusText);
 		}, (error) => {
 			nm.error(error.message);
 		});
@@ -44,19 +52,30 @@ export default class EntityContact extends React.Component {
 		}, (error) => {
 			nm.error(error.message);
 		});
+
+		getRequest.call(this, "entity/get_entity_users/" + this.props.id, (data) => {
+			this.setState({
+				users: data,
+			});
+		}, (response) => {
+			nm.warning(response.statusText);
+		}, (error) => {
+			nm.error(error.message);
+		});
 	}
 
-	addAddress() {
-		const addresses = _.cloneDeep(this.state.addresses);
-		addresses.push({
+	addContact() {
+		const contacts = _.cloneDeep(this.state.contacts);
+		contacts.push({
 			entity_id: this.props.id,
-			type: null,
-			representative: null,
+			user_id: null,
+			type: "EMAIL ADDRESS",
+			representative: "PHYSICAL PERSON",
 			name: null,
 			value: null,
 		});
 
-		this.setState({ addresses });
+		this.setState({ contacts });
 	}
 
 	changeState(field, value) {
@@ -71,36 +90,45 @@ export default class EntityContact extends React.Component {
 			/>;
 		}
 
-		if (this.state.addresses === null) {
+		if (this.state.contacts === null) {
 			return <Loading height={300}/>;
 		}
 
 		return (
 			<div className={"row"}>
 				<div className="col-md-12">
-					<div className={"top-right-buttons"}>
-						<button
-							className={"blue-background"}
-							onClick={() => this.addAddress()}>
-							<i className="fas fa-plus"/>
-						</button>
-					</div>
-					<h2>Contact points</h2>
+					<h2>Contact</h2>
 				</div>
 				<div className="col-md-12">
-					{this.state.addresses.length > 0
-						? this.state.addresses.map((a) => (
+					{this.state.contacts.length > 0
+						? this.state.contacts.map((a) => (
 							<Contact
 								key={a.id}
+								users={this.state.users}
 								info={a}
 								enums={this.state.contactEnums}
 								afterAction={() => this.refresh()}
 							/>
 						))
-						: <Message
-							text={"No contact found on the database"}
-							height={250}
-						/>
+						: <div className="text-center">
+							<Message
+								text={"No contact found on the database"}
+								height={50}
+							/>
+							<button
+								disabled={this.state.contacts.length > 0 || this.state.users.length < 1}
+								className={"blue-background"}
+								onClick={() => this.addContact()}>
+								Add Contact <i className="fas fa-plus"/>
+							</button>
+
+							{this.state.users.length < 1
+								&& <Message
+									text={"Unable to add contact, no users associated with this entity"}
+									height={50}
+								/>
+							}
+						</div>
 					}
 				</div>
 			</div>

@@ -11,6 +11,7 @@ from resource.account.verify_account import VerifyAccount
 from resource.account.update_status import UpdateStatus
 from resource.account.add_profile import AddProfile
 from resource.account.verify_login import VerifyLogin
+from resource.account.update_my_profile import UpdateMyProfile
 from resource.analytics.get_ecosystem_activity import GetEcosystemActivity
 from resource.article.copy_article_version import CopyArticleVersion
 from resource.article.get_articles import GetArticles
@@ -144,6 +145,8 @@ from resource.private.update_my_article_content import UpdateMyArticleContent
 from resource.private.update_my_form_answer import UpdateMyFormAnswer
 from resource.private.update_my_user import UpdateMyUser
 from resource.private.get_my_profile import GetMyProfile
+from resource.private.disassociate_from_entity import DisassociateFromEntity
+from resource.private.update_profile import UpdateProfile
 from resource.public.get_public_article_content import GetPublicArticleContent
 from resource.public.get_public_article_enums import GetArticleEnums
 from resource.public.get_public_article import GetPublicArticle
@@ -216,6 +219,7 @@ from resource.user.update_user import UpdateUser
 from resource.user.update_user_entity import UpdateUserEntity
 from resource.user.update_user_group_assignment import UpdateUserGroupAssignment
 from resource.user.get_user_profile import GetUserProfile
+from resource.user.disassociate_user_entity import DisassociateUserEntity
 from resource.taxonomy.add_taxonomy_assignment import AddTaxonomyAssignment
 from resource.taxonomy.add_taxonomy_category import AddTaxonomyCategory
 from resource.taxonomy.add_taxonomy_category_hierarchy import AddTaxonomyCategoryHierarchy

@@ -24,20 +24,21 @@ class GetEntityUsers(MethodResource, Resource):
     @verify_admin_access
     @catch_exception
     def get(self, id_):
+        entity_id = int(id_)
+        query = (
+            self.db.session.query(self.db.tables["UserEntityAssignment"])
+            .join(self.db.tables["User"], self.db.tables["User"].id == self.db.tables["UserEntityAssignment"].user_id)
+            .filter(
+                self.db.tables["UserEntityAssignment"].entity_id == entity_id,
+            )
+        )
 
-        subquery = self.db.session \
-            .query(self.db.tables["UserEntityAssignment"]) \
-            .with_entities(self.db.tables["UserEntityAssignment"].user_id) \
-            .filter(self.db.tables["UserEntityAssignment"].entity_id == int(id_)) \
-            .subquery()
+        users = query.with_entities(
+            self.db.tables["User"].id,
+            self.db.tables["User"].email,
+            self.db.tables["User"].first_name,
+            self.db.tables["User"].last_name,
+            self.db.tables["UserEntityAssignment"].work_email
+        ).all()
 
-        data = [r._asdict() for r in self.db.session
-                .query(self.db.tables["User"])
-                .with_entities(self.db.tables["User"].id,
-                               self.db.tables["User"].email,
-                               self.db.tables["User"].first_name,
-                               self.db.tables["User"].last_name)
-                .filter(self.db.tables["User"].id.in_(subquery))
-                .all()]
-
-        return data, "200 "
+        return [user._asdict() for user in users], "200 "

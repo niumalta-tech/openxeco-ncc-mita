@@ -4,7 +4,7 @@ import _ from "lodash";
 import { NotificationManager as nm } from "react-notifications";
 import FormLine from "./FormLine.jsx";
 import { postRequest } from "../../utils/request.jsx";
-import { validateNotNull, validateEmail } from "../../utils/re.jsx";
+import { validateNotNull } from "../../utils/re.jsx";
 import DialogConfirmation from "../dialog/DialogConfirmation.jsx";
 
 export default class Contact extends React.Component {
@@ -14,7 +14,7 @@ export default class Contact extends React.Component {
 		this.save = this.save.bind(this);
 		this.remove = this.remove.bind(this);
 		this.changeInfoState = this.changeInfoState.bind(this);
-		this.changeState = this.changeState.bind(this);
+		this.changeUser = this.changeUser.bind(this);
 
 		this.state = {
 			defaultInfo: props.info,
@@ -33,8 +33,14 @@ export default class Contact extends React.Component {
 
 	save() {
 		if (this.state.info.id !== undefined) {
-			const params = _.cloneDeep(this.state.info);
-			delete params.entity_id;
+			const params = {
+				id: this.state.info.id,
+				user_id: this.state.info.user_id,
+				type: "EMAIL ADDRESS",
+				representative: "PHYSICAL PERSON",
+				name: this.state.info.name,
+				value: this.state.info.value,
+			};
 
 			postRequest.call(this, "contact/update_contact", params, () => {
 				if (this.props.afterAction !== undefined) {
@@ -52,7 +58,6 @@ export default class Contact extends React.Component {
 				if (this.props.afterAction !== undefined) {
 					this.props.afterAction();
 				}
-
 				nm.info("The contact has been added");
 			}, (response) => {
 				nm.warning(response.statusText);
@@ -72,7 +77,6 @@ export default class Contact extends React.Component {
 				if (this.props.afterAction !== undefined) {
 					this.props.afterAction();
 				}
-
 				nm.info("The contact has been removed");
 			}, (response) => {
 				nm.warning(response.statusText);
@@ -84,13 +88,24 @@ export default class Contact extends React.Component {
 		}
 	}
 
-	changeState(field, value) {
-		this.setState({ [field]: value });
-	}
-
 	changeInfoState(field, value) {
 		const info = _.cloneDeep(this.state.info);
 		info[field] = value;
+		this.setState({ info });
+	}
+
+	changeUser(userId) {
+		const info = _.cloneDeep(this.state.info);
+		if (userId === null) {
+			info.user_id = null;
+			info.name = null;
+			info.value = null;
+		} else {
+			const user = this.props.users.filter((u) => u.id === userId)[0];
+			info.user_id = user.id;
+			info.name = `${user.first_name} ${user.last_name}`;
+			info.value = user.work_email;
+		}
 		this.setState({ info });
 	}
 
@@ -98,7 +113,7 @@ export default class Contact extends React.Component {
 		return (
 			<div className="row row-spaced">
 				<div className="col-md-12">
-					<FormLine
+					{/* <FormLine
 						label={"Type of contact info"}
 						type={"select"}
 						value={this.state.info.type}
@@ -123,8 +138,29 @@ export default class Contact extends React.Component {
 							)}
 						onChange={(v) => this.changeInfoState("representative", v)}
 						format={validateNotNull}
-					/>
+					/> */}
 					<FormLine
+						label={"User"}
+						type={"select"}
+						value={this.state.info.user_id}
+						options={
+							[{ value: null, label: "-" }].concat(
+								this.props.users.map((u) => ({ label: `${u.first_name} ${u.last_name} (${u.email})`, value: u.id })),
+							)
+						}
+						onChange={(v) => this.changeUser(v)}
+						format={validateNotNull}
+					/>
+					{/* {this.state.info.representative !== undefined
+						&& this.state.info.representative === "PHYSICAL PERSON"
+						&& <FormLine
+							label={"First and family name"}
+							value={this.state.info.name}
+							onChange={(v) => this.changeInfoState("name", v)}
+							disabled
+						/>
+					} */}
+					{/* <FormLine
 						label={"Department"}
 						type={"select"}
 						value={this.state.info.department}
@@ -136,18 +172,9 @@ export default class Contact extends React.Component {
 							)}
 						onChange={(v) => this.changeInfoState("department", v)}
 						format={validateNotNull}
-					/>
-					{this.state.info.representative !== undefined
-						&& this.state.info.representative === "PHYSICAL PERSON"
-						&& <FormLine
-							label={"First and family name"}
-							value={this.state.info.name}
-							onChange={(v) => this.changeInfoState("name", v)}
-							format={validateNotNull}
-						/>
-					}
+					/> */}
 
-					{this.state.info !== undefined && this.state.info.type === "PHONE NUMBER"
+					{/* {this.state.info !== undefined && this.state.info.type === "PHONE NUMBER"
 						&& <FormLine
 							type={"phone"}
 							label={"Phone number"}
@@ -162,7 +189,7 @@ export default class Contact extends React.Component {
 							value={this.state.info.value}
 							onChange={(v) => this.changeInfoState("value", v)}
 							format={validateEmail}
-						/>}
+						/>} */}
 
 				</div>
 				<div className={"col-md-12"}>
@@ -173,10 +200,10 @@ export default class Contact extends React.Component {
 							disabled={this.state.info.entity_id === undefined
 								|| !validateNotNull(this.state.info.type)
 								|| !validateNotNull(this.state.info.representative)
-								|| (this.state.info.type === "PHONE NUMBER"
-									&& !validateNotNull(this.state.info.value))
-								|| (this.state.info.type === "EMAIL ADDRESS"
-									&& !validateEmail(this.state.info.value))
+								// || (this.state.info.type === "PHONE NUMBER"
+								// 	&& !validateNotNull(this.state.info.value))
+								// || (this.state.info.type === "EMAIL ADDRESS"
+								// 	&& !validateEmail(this.state.info.value))
 								|| (this.state.info.representative === "PHYSICAL PERSON"
 									&& !validateNotNull(this.state.info.name))
 								|| _.isEqual(this.props.info, this.state.info)}

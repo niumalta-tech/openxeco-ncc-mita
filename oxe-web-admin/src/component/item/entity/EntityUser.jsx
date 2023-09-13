@@ -51,7 +51,7 @@ export default class EntityUser extends React.Component {
 	checkForPrimary(entityId) {
 		getRequest.call(this, "entity/get_entity_contacts/" + entityId, (data) => {
 			this.setState({
-				users: this.state.users.map((user) => ({ ...user, primary: user.id === data[0].user_id })),
+				users: this.state.users.map((user) => ({ ...user, primary: user.id === data.id })),
 			});
 		}, (response) => {
 			nm.warning(response.statusText);

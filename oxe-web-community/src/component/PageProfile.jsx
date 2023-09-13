@@ -1,16 +1,17 @@
 import React from "react";
 import "./PageProfile.css";
 import vCard from "vcf";
-// import QRCode from "react-qr-code";
 import Popup from "reactjs-popup";
 import { NotificationManager as nm } from "react-notifications";
 import Info from "./box/Info.jsx";
 import FormLine from "./form/FormLine.jsx";
 import { getRequest, postRequest } from "../utils/request.jsx";
-import { validatePassword, validateTelephoneNumber } from "../utils/re.jsx";
-// import { getApiURL } from "../utils/env.jsx";
+import {
+	validatePassword, validateTelephoneNumber, validateNotNull, validateName,
+} from "../utils/re.jsx";
 import Loading from "./box/Loading.jsx";
 import Message from "./box/Message.jsx";
+import UpdateProfile from "./pageprofile/UpdateProfile.jsx";
 
 export default class PageProfile extends React.Component {
 	constructor(props) {
@@ -20,6 +21,9 @@ export default class PageProfile extends React.Component {
 		this.changePassword = this.changePassword.bind(this);
 		this.generateHandle = this.generateHandle.bind(this);
 		this.updateUser = this.updateUser.bind(this);
+		this.updateProfile = this.updateProfile.bind(this);
+		this.setProfileValues = this.setProfileValues.bind(this);
+		this.updateDetails = this.updateDetails.bind(this);
 
 		this.state = {
 			currentUser: null,
@@ -27,6 +31,9 @@ export default class PageProfile extends React.Component {
 			currentVcard: null,
 
 			userChanged: false,
+			profileChanged: false,
+			userProfile: null,
+
 			socialEmpty: true,
 
 			password: "",
@@ -36,17 +43,48 @@ export default class PageProfile extends React.Component {
 			fullName: "",
 			title: "",
 			email: "",
+
+			entityToDelete: "",
+			passwordForDelete: "",
+
+			countries: [],
+			professions: [],
 		};
 	}
 
 	componentDidMount() {
 		this.refreshProfile();
+
+		getRequest.call(this, "public/get_public_countries", (data) => {
+			this.setState({
+				countries: data,
+			});
+		}, (error) => {
+			nm.warning(error.message);
+		}, (error) => {
+			nm.error(error.message);
+		});
+
+		getRequest.call(this, "public/get_public_professions", (data) => {
+			this.setState({
+				professions: data,
+			});
+		}, (error) => {
+			nm.warning(error.message);
+		}, (error) => {
+			nm.error(error.message);
+		});
 	}
 
 	refreshProfile() {
+		this.setState({
+			userProfile: null,
+			profileChanged: false,
+			userChanged: false,
+		});
+
 		getRequest.call(this, "private/get_my_user", (data) => {
 			this.setState({
-				userChanged: false,
 				currentUser: data,
 				/* eslint-disable-next-line new-cap */
 				dbVcard: data.vcard ? new vCard().parse(data.vcard) : new vCard(),
@@ -55,6 +93,16 @@ export default class PageProfile extends React.Component {
 			});
 		}, (response) => {
 			nm.warning(response.statusText);
+		}, (error) => {
+			nm.error(error.message);
+		});
+
+		getRequest.call(this, "private/get_my_profile", (data) => {
+			this.setState({
+				userProfile: data,
+			});
+		}, (error) => {
+			nm.warning(error.message);
 		}, (error) => {
 			nm.error(error.message);
 		});
@@ -198,6 +246,104 @@ export default class PageProfile extends React.Component {
 		});
 	}
 
+	isStudentOrRetired() {
+		const role = this.state.professions.find(
+			(p) => (p.id === this.state.userProfile.profession_id),
+		);
+		if (role === undefined) {
+			return false;
+		}
+		return role.name === "Student" || role.name === "Retired";
+	}
+
+	isProfileFormValid() {
+		let valid = true;
+		const malta = this.state.countries.find(
+			(country) => (country.name === "Malta"),
+		);
+
+		if (this.state.userProfile.telephone !== "" && !validateTelephoneNumber(this.state.userProfile.telephone)) {
+			valid = false;
+			nm.warning("Telephone number is not valid");
+		}
+
+		if (this.state.userProfile.mobile !== "" && !validateTelephoneNumber(this.state.userProfile.mobile)) {
+			valid = false;
+			nm.warning("Mobile number is not valid");
+		}
+
+		if (this.state.userProfile.first_name !== "" && !validateName(this.state.userProfile.first_name)) {
+			valid = false;
+			nm.warning("Name is not valid");
+		}
+
+		if (this.state.userProfile.last_name !== "" && !validateName(this.state.userProfile.last_name)) {
+			valid = false;
+			nm.warning("Surname is not valid");
+		}
+
+		if (malta === undefined
+			|| this.state.userProfile.first_name === ""
+			|| this.state.userProfile.last_name === ""
+			|| this.state.userProfile.domains_of_interest === null
+			|| this.state.userProfile.experience === null
+			|| this.state.userProfile.expertise_id === null
+			|| this.state.userProfile.gender === null
+			|| this.state.userProfile.how_heard === null
+			|| this.state.userProfile.nationality_id === null
+			|| this.state.userProfile.profession_id === null
+			|| this.state.userProfile.residency === null
+			|| (
+				this.isStudentOrRetired() === false
+				&& (this.state.userProfile.sector === null || this.state.userProfile.industry_id === null)
+			)
+		) {
+			nm.warning("Please fill in all of the required fields");
+			valid = false;
+		}
+		if (malta !== undefined) {
+			if (
+				this.state.nationality_id !== null
+				&& this.state.userProfile.nationality_id !== malta.id
+				&& this.state.userProfile.residency !== ""
+				&& this.state.userProfile.residency !== "Malta"
+				&& this.state.userProfile.residency !== "Gozo"
+			) {
+				nm.warning("The account is only available to Maltese or Gozo residents or Maltese nationals");
+				valid = false;
+			}
+		}
+		return valid;
+	}
+
+	updateProfile() {
+		postRequest.call(this, "account/update_my_profile", { data: this.state.userProfile }, () => {
+			nm.info("The information has been updated");
+			this.refreshProfile();
+		}, (response) => {
+			nm.warning(response.statusText);
+		}, (error) => {
+			nm.error(error.message);
+		});
+	}
+
+	updateDetails() {
+		if (this.state.profileChanged && this.state.userProfile !== null && this.isProfileFormValid()) {
+			this.updateProfile();
+		}
+
+		if (this.state.userChanged) {
+			this.updateUser();
+		}
+	}
+
+	setProfileValues(newProfile) {
+		this.setState({
+			userProfile: newProfile,
+			profileChanged: true,
+		});
+	}
+
 	generateHandle(property, value) {
 		const params = {
 			[property]: value,
@@ -224,6 +370,29 @@ export default class PageProfile extends React.Component {
 			this.setState({ currentUser: user });
 			this.setState({ userChanged: true });
 		}
+	}
+
+	disassociateFromEntity(close) {
+		const params = {
+			entity_id: this.state.entityToDelete,
+			password: this.state.passwordForDelete,
+		};
+
+		postRequest.call(this, "private/disassociate_from_entity", params, () => {
+			this.setState({
+				entityToDelete: "",
+				passwordForDelete: "",
+			});
+			nm.info("You have been disassociated from the entity");
+			this.props.getMyEntities();
+			if (close) {
+				close();
+			}
+		}, (response) => {
+			nm.warning(response.statusText);
+		}, (error) => {
+			nm.error(error.message);
+		});
 	}
 
 	render() {
@@ -382,6 +551,85 @@ export default class PageProfile extends React.Component {
 										</div>}
 									</Popup>
 
+									<Popup
+										className="Popup-full-size"
+										trigger={
+											<button className="blue-button">
+												Disassociate from Entity
+											</button>
+										}
+										onClose={() => {
+											this.setState({
+												entityToDelete: "",
+											});
+										}}
+										modal
+										closeOnDocumentClick
+									>
+										{(close) => <div className="row">
+											<div className="col-md-12">
+												<h2>Disassociate from Entity</h2>
+
+												<div className={"top-right-buttons"}>
+													<button
+														className={"grey-background"}
+														data-hover="Close"
+														data-active=""
+														onClick={close}>
+														<span><i className="far fa-times-circle"/></span>
+													</button>
+												</div>
+											</div>
+											{ this.props.myEntities !== null && this.props.myEntities.length > 0
+												? <div className="col-md-12">
+													<div>
+														<FormLine
+															label="Select Entity"
+															type="select"
+															options={[{ value: "", label: "-" }].concat(
+																this.props.myEntities.map((e) => ({
+																	label: (
+																		<>
+																			<div title={e.name}>{e.name}</div>
+																		</>
+																	),
+																	value: e.id,
+																})),
+															)}
+															fullWidth={true}
+															value={this.state.entityToDelete}
+															onChange={(v) => this.changeState("entityToDelete", v)}
+															onKeyDown={this.onKeyDown}
+															format={validateNotNull}
+														/>
+														{ this.state.entityToDelete !== ""
+															&& <FormLine
+																label="Please enter your password to confirm"
+																fullWidth={true}
+																value={this.state.passwordForDelete}
+																onChange={(v) => this.changeState("passwordForDelete", v)}
+																onKeyDown={this.onKeyDown}
+																format={validateNotNull}
+																type="password"
+															/>
+														}
+													</div>
+													<div>
+														<div className="right-buttons">
+															<button
+																onClick={() => this.disassociateFromEntity(close)}
+																disabled={!validateNotNull(this.state.entityToDelete)
+																	|| this.state.passwordForDelete === ""}>
+																Disassociate
+															</button>
+														</div>
+													</div>
+												</div>
+												: <div className="col-md-12">You are not associated with any entities</div>
+											}
+										</div>}
+									</Popup>
+
 									{/* <button
 										className="blue-button"
 										onClick={() => window.open(
@@ -451,27 +699,20 @@ export default class PageProfile extends React.Component {
 									onChange={(v) => this.updateCurrentVcard("email", v ? this.state.currentUser.email : null)}
 								/>
 								<FormLine
-									label={"Telephone"}
-									value={this.state.currentUser.telephone}
-									onChange={(v) => this.updateUserDetail("telephone", v)}
-									format={validateTelephoneNumber}
-								/>
-								{ !validateTelephoneNumber(this.state.currentUser.telephone) && this.state.currentUser.telephone !== ""
-									&& <div className="row">
-										<div className="col-md-6"></div>
-										<div className="col-md-6">
-											<div className="validation-error">
-												Accepted Format: +1234567891, 1234567891
-											</div>
-										</div>
-									</div>
-								}
-								<FormLine
 									label={"Include telephone in my public profile"}
 									type={"checkbox"}
 									value={this.getVcardValue("tel") !== null}
 									onChange={(v) => this.updateCurrentVcard("tel", v ? this.state.currentUser.telephone : null)}
 								/>
+							</div>
+							<div className="col-md-12 PageProfile-white-box">
+								<h3>Details</h3>
+								<br/>
+								{this.state.userProfile != null
+									&& <UpdateProfile
+										userProfile={this.state.userProfile}
+										setProfileValues={this.setProfileValues} />
+								}
 							</div>
 							<div className="col-md-12 PageProfile-white-box">
 								<h3>Social media and website</h3>
@@ -537,7 +778,7 @@ export default class PageProfile extends React.Component {
 					</div>
 				</div>
 
-				{this.state.userChanged
+				{(this.state.userChanged || this.state.profileChanged)
 					&& <div className="PageProfile-save-button">
 						<div className="row">
 							<div className="col-md-6">
@@ -549,7 +790,7 @@ export default class PageProfile extends React.Component {
 							</div>
 							<div className="col-md-6">
 								<button
-									onClick={this.updateUser}>
+									onClick={this.updateDetails}>
 									<i className="fas fa-save" /> Save profile
 								</button>
 							</div>
