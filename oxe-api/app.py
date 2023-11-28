@@ -38,6 +38,8 @@ app.config['CORS_HEADERS'] = 'Content-Type'
 app.config["CORS_SUPPORTS_CREDENTIALS"] = True
 app.config["CORS_ORIGINS"] = config.CORS_ORIGINS if config.CORS_ORIGINS else []
 
+print(app.config["CORS_ORIGINS"])
+
 app.config['MAIL_SERVER'] = config.MAIL_SERVER
 app.config['MAIL_PORT'] = config.MAIL_PORT
 app.config['MAIL_USERNAME'] = config.MAIL_USERNAME
