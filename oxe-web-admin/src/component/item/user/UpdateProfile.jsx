@@ -42,7 +42,7 @@ export default class UpdateProfile extends React.Component {
 	componentDidMount() {
 		this.setState({
 			profile: this.props.userProfile,
-			selected_domains: this.props.userProfile.domains_of_interest.split(" | "),
+			selected_domains: this.props.userProfile.domains_of_interest?.split(" | "),
 		});
 
 		getRequest.call(this, "public/get_public_countries", (data) => {
@@ -136,12 +136,12 @@ export default class UpdateProfile extends React.Component {
 	setDomains(name, value) {
 		let domains = [];
 		if (this.state.profile.domains_of_interest !== null) {
-			domains = this.state.profile.domains_of_interest.split(" | ");
+			domains = this.state.profile.domains_of_interest?.split(" | ");
 		}
-		if (value === true && domains.includes(name) === false) {
+		if (value === true && domains?.includes(name) === false) {
 			domains.push(name);
 		}
-		if (value === false && domains.includes(name) === true) {
+		if (value === false && domains?.includes(name) === true) {
 			const index = domains.indexOf(name);
 			if (index > -1) {
 				domains.splice(index, 1);
@@ -318,7 +318,7 @@ export default class UpdateProfile extends React.Component {
 								key={c.id}
 								label={c.name}
 								type={"checkbox"}
-								value={this.state.selected_domains.includes(c.name)}
+								value={this.state.selected_domains?.includes(c.name)}
 								onChange={(v) => this.setDomains(c.name, v)}
 							/>
 						))

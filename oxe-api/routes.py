@@ -65,6 +65,7 @@ from resource.entity.add_entity import AddEntity
 from resource.entity.delete_entity import DeleteEntity
 from resource.entity.request_entity_form import RequestEntityForm
 from resource.entity.verify_work_email import VerifyWorkEmail
+from resource.entity.verify_delete_user import VerifyDeleteUser
 from resource.contact.add_contact import AddContact
 from resource.contact.delete_contact import DeleteContact
 from resource.contact.get_contact_enums import GetContactEnums

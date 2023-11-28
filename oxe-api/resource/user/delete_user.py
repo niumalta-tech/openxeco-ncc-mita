@@ -18,8 +18,9 @@ class DeleteUser(MethodResource, Resource):
 
     db = None
 
-    def __init__(self, db):
+    def __init__(self, db, mail):
         self.db = db
+        self.mail = mail
 
     @log_request
     @doc(tags=['user'],
@@ -36,10 +37,10 @@ class DeleteUser(MethodResource, Resource):
     @catch_exception
     def post(self, **kwargs):
 
-        # if 'HTTP_ORIGIN' in request.environ and request.environ['HTTP_ORIGIN']:
-        #     origin = request.environ['HTTP_ORIGIN']
-        # else:
-        #     return "", "500 Impossible to find the origin. Please contact the administrator"
+        if 'HTTP_ORIGIN' in request.environ and request.environ['HTTP_ORIGIN']:
+            origin = request.environ['HTTP_ORIGIN']
+        else:
+            return "", "500 Impossible to find the origin. Please contact the administrator"
 
 
         entities = self.db.get(self.db.tables["User"], {"id": kwargs["id"]})
@@ -50,18 +51,15 @@ class DeleteUser(MethodResource, Resource):
         else:
             raise ObjectNotFound
 
-
-        data = self.db.get(self.db.tables["User"], {"id": kwargs["id"]})
-
-        user = data[0] if len(data) > 0 else self.db.tables["User"](id=-1, id=kwargs["id"])
-        expires = datetime.timedelta(minutes=15 if len(data) > 0 else 0)
+        user = entities[0]
+        expires = datetime.timedelta(minutes=15)
         token = create_access_token(str(user.id), expires_delta=expires)
         url = f"{origin}/verify_delete_user?token={token}"
 
         send_email(
             self.mail,
             subject=f"Confirm Delete Account",
-            recipients=[user["email"]],
+            recipients=[user.email],
             html_body=render_template(
                 'account_deletion.html',
                 url=url,

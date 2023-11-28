@@ -37,8 +37,8 @@ export default function Table({
 					<thead>
 						{headerGroups.map((headerGroup, i) => (
 							<tr {...headerGroup.getHeaderGroupProps()} key={i}>
-								{headerGroup.headers.map((column) => (
-									<th {...column.getHeaderProps()} key={i}>{column.render("Header")}</th>
+								{headerGroup.headers.map((column, idx) => (
+									<th {...column.getHeaderProps()} key={`${i}_${idx}`}>{column.render("Header")}</th>
 								))}
 							</tr>
 						))}
@@ -48,7 +48,7 @@ export default function Table({
 							prepareRow(row);
 							return (
 								<tr {...row.getRowProps()} key={i}>
-									{row.cells.map((cell) => <td {...cell.getCellProps()} key={i}>
+									{row.cells.map((cell, idx) => <td key={`${i}_${idx}`} {...cell.getCellProps()}>
 										{cell.render("Cell")}
 									</td>)}
 								</tr>

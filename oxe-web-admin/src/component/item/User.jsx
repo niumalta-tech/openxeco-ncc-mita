@@ -71,7 +71,7 @@ export default class User extends Item {
 		};
 
 		postRequest.call(this, "user/delete_user", params, () => {
-			nm.info("The user has been deleted");
+			nm.info("The delete user request has been sent");
 
 			if (close) {
 				close();
