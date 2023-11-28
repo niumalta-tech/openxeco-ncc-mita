@@ -1,0 +1,17 @@
+<p>Dear {{ email }},</p>
+<p>There is an account deletion request with your email address.</p>
+
+<p>
+    To confirm deleting your account, please click this link:
+    <br><br>
+    <a href="{{ url|safe }}">
+        Confirm Account Deletion
+    </a>
+    <br>
+    <span style="font-style: italic; font-size: 0.8rem;">This link expires in 15 minutes.</span>
+</p>
+
+<p>Sincerely,</p>
+<p>
+    <img src="cid:logo" alt="Logo" style="width:200px;">
+</p>
