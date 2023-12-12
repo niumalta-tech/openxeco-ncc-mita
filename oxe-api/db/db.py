@@ -481,6 +481,8 @@ class DB:
             query = query.filter(or_(self.tables["Document"].filename.contains(f"%{filters['search']}%"),
                                      self.tables["Document"].keywords.contains(f"%{filters['search']}%")))
 
+        query = query.filter(self.tables["Document"].is_private.is_(False))
+
         if "order" in filters and filters["order"] == "desc":
             query = query.order_by(self.tables["Document"].creation_date.desc())
         else:

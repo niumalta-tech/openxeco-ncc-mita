@@ -52,6 +52,7 @@ from resource.campaign.get_campaigns import GetCampaigns
 from resource.campaign.update_campaign import UpdateCampaign
 from resource.campaign.update_campaign_template import UpdateCampaignTemplate
 from resource.campaign.send_campaign import SendCampaign
+from resource.document.get_private_document import GetPrivateDocument
 from resource.entity.extract_entities import ExtractEntities
 from resource.entity.get_entities import GetEntities
 from resource.entity.get_entity import GetEntity

@@ -4,26 +4,30 @@ from flask import send_file
 from flask_apispec import MethodResource
 from flask_apispec import doc
 from flask_restful import Resource
+from flask_jwt_extended import jwt_required
 from sqlalchemy.orm.exc import NoResultFound
 
 from config.config import DOCUMENT_FOLDER
 from db.db import DB
 from decorator.catch_exception import catch_exception
+from decorator.verify_admin_access import verify_admin_access
 from exception.document_not_found import DocumentNotFound
 
 
-class GetPublicDocument(MethodResource, Resource):
+class GetPrivateDocument(MethodResource, Resource):
 
     def __init__(self, db: DB):
         self.db = db
 
-    @doc(tags=['public'],
+    @doc(tags=['document'],
          description='Get document from the media library. Accept the filename as a parameter',
          responses={
              "200": {},
              "422.a": {"description": "No document found with this filename"},
              "422.b": {"description": "Document not found"},
          })
+    @jwt_required
+    @verify_admin_access
     @catch_exception
     def get(self, filename_):
 
@@ -35,9 +39,6 @@ class GetPublicDocument(MethodResource, Resource):
         except NoResultFound:
             return "", "422 No document found with this filename"
 
-        if document.is_private:
-            return "", "422 Document not found"
-
         try:
             f = open(os.path.join(DOCUMENT_FOLDER, str(document.id)), "rb")
         except FileNotFoundError:
@@ -46,7 +47,7 @@ class GetPublicDocument(MethodResource, Resource):
         return send_file(
             f,
             attachment_filename=document.filename,
-            mimetype=GetPublicDocument.get_mime_type(document.filename)
+            mimetype=GetPrivateDocument.get_mime_type(document.filename)
         )
 
     @staticmethod

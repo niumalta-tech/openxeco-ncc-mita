@@ -495,7 +495,7 @@ export default class Request extends Component {
 						&& <div className="col-md-12 row-spaced">
 							<h3>File</h3>
 							<div>
-								<a href={getApiURL() + "public/get_public_document/" + this.props.info.file}
+								<a href={getApiURL() + "document/get_private_document/" + this.props.info.file}
 									className="btn btn-secondary" rel="noreferrer" target="_blank">
 									{this.props.info.file}
 								</a>
