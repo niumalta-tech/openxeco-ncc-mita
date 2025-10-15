@@ -35,9 +35,6 @@ class GetPublicDocument(MethodResource, Resource):
         except NoResultFound:
             return "", "422 No document found with this filename"
 
-        if document.is_private:
-            return "", "422 Document not found"
-
         try:
             f = open(os.path.join(DOCUMENT_FOLDER, str(document.id)), "rb")
         except FileNotFoundError:
