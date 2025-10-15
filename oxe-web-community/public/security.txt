@@ -1,0 +1,7 @@
+Contact: mailto:govmtCSIRT@gov.mt
+Contact: mailto:securityoperations.mita@gov.mt
+Expires: 2028-06-23T22:00:00.000Z
+Encryption: pgp key for govmtCSIRT@gov.mt - https://keys.openpgp.org/vks/v1/by-fingerprint/7367D6A8ED0E86054D8960C328A80487BA3FA7AA
+Preferred-Languages: maltese,english
+Policy: https://mita.gov.mt/wp-content/uploads/2023/08/GMICT_P_0122_Vulnerability_Disclosure.pdf
+Hiring: https://mita.gov.mt/careers/
