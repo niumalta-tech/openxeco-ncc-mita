@@ -39,6 +39,6 @@ class Refresh(MethodResource, Resource):
 
         now = datetime.datetime.now()
 
-        response = set_cookie(request, response, "access_token_cookie", access_token, now + datetime.timedelta(days=1))
+        response = set_cookie(response, "access_token_cookie", access_token, now + datetime.timedelta(days=1))
 
         return response
