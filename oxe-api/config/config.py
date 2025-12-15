@@ -22,9 +22,12 @@ def _getenv(key, default=None, mandatory=True):
 ENVIRONMENT         = _getenv('ENVIRONMENT',    default='dev')
 PORT                = _getenv('PORT',           default='5000')
 
+SERVER_NAME         = _getenv('SERVER_NAME',    default='localhost:{}'.format(PORT))
+
+JWT_COOKIE_DOMAIN   = _getenv('JWT_COOKIE_DOMAIN', mandatory=True)
 JWT_SECRET_KEY      = _getenv('JWT_SECRET_KEY', mandatory=True)
-SECRET_KEY      = _getenv('SECRET_KEY', mandatory=True)
-SECURITY_SALT      = _getenv('SECURITY_SALT', mandatory=True)
+SECRET_KEY          = _getenv('SECRET_KEY', mandatory=True)
+SECURITY_SALT       = _getenv('SECURITY_SALT', mandatory=True)
 
 DB_CONFIG = {
     'drivername':   _getenv('DB_DRIVER',    default='mysql+pymysql'),

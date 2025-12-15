@@ -62,7 +62,7 @@ class VerifyLogin(MethodResource, Resource):
         now = datetime.now()
 
 
-        response = set_cookie(request, response, "access_token_cookie", access_token, now + timedelta(days=1))
-        response = set_cookie(request, response, "refresh_token_cookie", refresh_token, now + timedelta(days=365))
+        response = set_cookie(response, "access_token_cookie", access_token, now + timedelta(days=1))
+        response = set_cookie(response, "refresh_token_cookie", refresh_token, now + timedelta(days=365))
 
         return response
