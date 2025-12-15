@@ -1,3 +1,4 @@
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask import Flask, redirect
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
@@ -25,10 +26,18 @@ db_uri = URL(**config.DB_CONFIG)
 
 # Init Flask and set config
 app = Flask(__name__, template_folder="template")
+
+app.wsgi_app = ProxyFix(
+    app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+)
+
+app.config["SERVER_NAME"] = "api.staging.ncc-mita.gov.mt"
+
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["ERROR_404_HELP"] = False
 
+app.config["JWT_COOKIE_DOMAIN"] = ".staging.ncc-mita.gov.mt"
 app.config["JWT_SECRET_KEY"] = config.JWT_SECRET_KEY
 app.config["JWT_TOKEN_LOCATION"] = ['headers', 'cookies', 'query_string']
 app.config["JWT_COOKIE_SECURE"] = config.ENVIRONMENT != "dev"
