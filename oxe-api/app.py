@@ -31,13 +31,13 @@ app.wsgi_app = ProxyFix(
     app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
 )
 
-app.config["SERVER_NAME"] = "api.staging.ncc-mita.gov.mt"
+app.config["SERVER_NAME"] = config.SERVER_NAME
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["ERROR_404_HELP"] = False
 
-app.config["JWT_COOKIE_DOMAIN"] = ".staging.ncc-mita.gov.mt"
+app.config["JWT_COOKIE_DOMAIN"] = config.JWT_COOKIE_DOMAIN
 app.config["JWT_SECRET_KEY"] = config.JWT_SECRET_KEY
 app.config["JWT_TOKEN_LOCATION"] = ['headers', 'cookies', 'query_string']
 app.config["JWT_COOKIE_SECURE"] = config.ENVIRONMENT != "dev"
